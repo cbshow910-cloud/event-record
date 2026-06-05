@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>事件紀錄系統</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+  --bg: #f6f8fb;
+  --surface: #ffffff;
+  --surface-muted: #f9fafb;
+  --text: #111827;
+  --muted: #667085;
+  --border: #d9e0ea;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --primary-soft: #dbeafe;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --success: #16a34a;
+  --success-soft: #dcfce7;
+  --warning: #d97706;
+  --warning-soft: #fef3c7;
+  --slate: #475569;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+  --radius: 8px;
+}
+
+body.dark {
+  --bg: #0b1220;
+  --surface: #111827;
+  --surface-muted: #172033;
+  --text: #e5e7eb;
+  --muted: #a3aab8;
+  --border: #253247;
+  --primary: #60a5fa;
+  --primary-strong: #93c5fd;
+  --primary-soft: #1e3a8a55;
+  --danger: #f87171;
+  --danger-soft: #7f1d1d;
+  --success: #4ade80;
+  --success-soft: #14532d;
+  --warning: #fbbf24;
+  --warning-soft: #78350f;
+  --slate: #94a3b8;
+  --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", "Noto Sans TC", Arial, sans-serif;
+  background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 30rem), var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+button, input, select, textarea { font: inherit; }
+
+.app-shell { width: min(1440px, 100%); margin: 0 auto; }
+
+.header { padding: 24px 28px 18px; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+
+.title { display: flex; align-items: center; gap: 10px; font-size: 24px; font-weight: 800; letter-spacing: 0; }
+.title-mark { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: var(--radius); background: var(--primary); color: white; font-size: 18px; }
+.subtitle { font-size: 13px; color: var(--muted); margin-top: 6px; }
+
+.container { display: grid; grid-template-columns: minmax(320px, 380px) minmax(0, 1fr); gap: 20px; padding: 0 28px 24px; align-items: start; }
+.stack { display: grid; gap: 18px; }
+
+.card {
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+}
+.card.edit-mode { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); transform: translateY(-2px); }
+.card h3 { margin: 0 0 14px; font-size: 16px; letter-spacing: 0; }
+
+.section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.full { grid-column: 1 / -1; }
+
+label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+input, select, textarea { width: 100%; padding: 10px 11px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
+input[type="file"] { padding: 7px 11px; }
+textarea { min-height: 82px; resize: vertical; }
+input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+.button-group-vertical { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+button { min-height: 40px; padding: 9px 13px; border: 1px solid transparent; border-radius: var(--radius); cursor: pointer; font-weight: 800; color: white; transition: transform 0.12s ease, filter 0.12s ease, border-color 0.12s ease; }
+button:hover { filter: brightness(0.96); }
+button:active { transform: translateY(1px); }
+
+.btn-add { background: var(--success); }
+.btn-export { background: var(--primary); }
+.btn-clear { background: var(--danger); }
+.btn-filter, .btn-slate { background: var(--slate); }
+.btn-delete { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--danger); color: var(--danger); }
+.btn-edit { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--primary); color: var(--primary); }
+.btn-cancel { background: var(--slate); }
+button[hidden] { display: none; }
+.btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
+.stat-box { background: var(--surface-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; min-width: 0; }
+.stat-label { font-size: 13px; color: var(--muted); font-weight: 700; }
+.stat-value { margin-top: 8px; font-size: 26px; line-height: 1.1; font-weight: 900; word-break: break-word; }
+.stat-value.small { font-size: 16px; line-height: 1.35; }
+
+.charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.chart-panel { min-width: 0; }
+.chart-panel h4 { margin: 0 0 10px; color: var(--muted); font-size: 13px; font-weight: 800; }
+.chart-box { height: 250px; position: relative; }
+
+.table-card { margin: 0 28px 28px; }
+.table-tools { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.table-container { max-height: 460px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+
+table { width: 100%; border-collapse: collapse; min-width: 1150px; } /* 微調表格最小寬度以容納新欄位 */
+th { position: sticky; top: 0; background: var(--surface-muted); z-index: 1; text-align: left; color: var(--muted); font-size: 13px; white-space: nowrap; }
+th[data-sort] { cursor: pointer; user-select: none; transition: background 0.15s; }
+th[data-sort]:hover { background: color-mix(in srgb, var(--surface-muted) 80%, var(--primary) 20%); }
+.sort-icon { display: inline-block; margin-left: 4px; font-size: 10px; color: var(--primary); width: 12px; }
+td, th { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+td { font-size: 14px; }
+tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 32%, transparent); }
+
+.event-cell { max-width: 250px; white-space: pre-wrap; }
+.action-cell { width: 1%; white-space: nowrap; }
+
+.ownership-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ownership-btn { background: var(--surface); color: var(--text); border-color: var(--border); }
+.ownership-btn.active { background: var(--primary); color: #ffffff; border-color: var(--primary); }
+.ownership-btn.external.active { background: var(--warning); border-color: var(--warning); }
+
+.badge { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; padding: 4px 9px; border-radius: 999px; font-size: 12px; font-weight: 900; }
+.badge.high { background: var(--danger-soft); color: #991b1b; }
+.badge.medium { background: var(--warning-soft); color: #92400e; }
+.badge.low { background: var(--success-soft); color: #166534; }
+body.dark .badge.high { color: #fecaca; }
+body.dark .badge.medium { color: #fde68a; }
+body.dark .badge.low { color: #bbf7d0; }
+.badge.owner-internal { background: var(--primary-soft); color: var(--primary-strong); }
+.badge.owner-external { background: var(--warning-soft); color: #92400e; }
+
+.thumb-img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.thumb-img:hover { transform: scale(1.1); box-shadow: var(--shadow); }
+
+.status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 999px; background: var(--surface-muted); border: 1px solid var(--border); color: var(--muted); font-size: 13px; font-weight: 700; transition: all 0.2s ease; }
+.status-pill.edit-active { color: var(--danger); font-weight: 900; background: var(--danger-soft); border-color: var(--danger); }
+.empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 15px; }
+.notice { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.form-note { margin-top: 10px; }
+
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+.toast { padding: 12px 20px; border-radius: var(--radius); color: white; font-weight: 700; font-size: 14px; box-shadow: var(--shadow); animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards; }
+.toast.success { background: var(--success); }
+.toast.error { background: var(--danger); }
+
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+@media (max-width: 980px) {
+  .container { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .header { padding: 18px; }
+  .container, .table-card { margin: 0; padding: 0 18px 18px; }
+}
+
+@media print {
+  body { background: white; color: black; }
+  #themeBtn, #formCard, .card:nth-child(2), .button-row, .button-group-vertical, .action-cell, .table-tools .notice { display: none !important; }
+  .app-shell { width: 100%; margin: 0; padding: 0; }
+  .container { display: block; padding: 0; }
+  .table-card { margin: 20px 0; box-shadow: none; border: none; padding: 0; }
+  .table-container { max-height: none; overflow: visible; border: none; }
+  table { width: 100%; border-collapse: collapse; min-width: auto; }
+  th, td { border: 1px solid #ddd; padding: 8px; }
+  th { background: #f0f0f0 !important; color: black !important; }
+  .action-cell, th:last-child { display: none; }
+  .charts { break-inside: avoid; }
+}
+</style>
+</head>
+
+<body>
+<div class="app-shell">
+  <header class="header">
+    <div>
+      <div class="title"><span class="title-mark" aria-hidden="true">!</span>事件紀錄系統</div>
+      <div class="subtitle">事故、問題紀錄、搜尋、篩選、統計與匯出</div>
+    </div>
+    <button onclick="toggleTheme()" class="btn-ghost" id="themeBtn" type="button">深色模式</button>
+  </header>
+
+  <main class="container">
+    <section class="stack">
+      <div class="card" id="formCard">
+        <div class="section-title">
+          <h3 id="formTitle">新增紀錄</h3>
+          <span class="status-pill" id="formMode">必填：帶有 * 號的欄位</span>
+        </div>
+
+        <form id="recordForm" class="form-grid" onsubmit="addRecord(event)">
+          <div>
+            <label for="date">發生日期 *</label>
+            <input type="date" id="date" required>
+          </div>
+
+          <div>
+            <label for="time">發生時間</label>
+            <input type="time" id="time">
+          </div>
+
+          <div class="full">
+            <label for="event">發生事件 *</label>
+            <textarea id="event" required placeholder="例：出餐延誤、設備異常、交接疏漏..."></textarea>
+          </div>
+
+          <div class="full">
+            <label for="reason">發生原因 *</label>
+            <textarea id="reason" list="reason-list" required placeholder="例：人員不足、設備故障、流程未確認..."></textarea>
+            <datalist id="reason-list"></datalist>
+          </div>
+
+          <div class="full">
+            <label for="photo" style="color: var(--danger);">現場照片 (⚠️ 空間有限，請盡量上傳小於 1MB 的圖片)</label>
+            <input type="file" id="photo" accept="image/*">
+            <div id="currentPhotoInfo" style="font-size: 12px; color: var(--primary); margin-top: 4px; display: none;">目前已有一張照片，上傳新照片將會覆蓋。</div>
+          </div>
+
+          <div>
+            <label for="related">相關人員 *</label>
+            <input type="text" id="related" list="related-list" required placeholder="例：王小明、廚房人員">
+            <datalist id="related-list"></datalist>
+          </div>
+
+          <div>
+            <label for="reporter">填寫人員 *</label>
+            <input type="text" id="reporter" list="reporter-list" required placeholder="例：陳○○">
+            <datalist id="reporter-list"></datalist>
+          </div>
+
+          <div>
+            <label for="level">嚴重程度</label>
+            <select id="level">
+              <option value="low">低</option>
+              <option value="medium">中</option>
+              <option value="high">高</option>
+            </select>
+          </div>
+
+          <div>
+            <label>問題歸屬</label>
+            <input type="hidden" id="ownership" value="internal">
+            <div class="ownership-options" role="group">
+              <button class="ownership-btn active" id="ownerInternalBtn" onclick="setOwnership('internal')" type="button">內部</button>
+              <button class="ownership-btn external" id="ownerExternalBtn" onclick="setOwnership('external')" type="button">外部</button>
+            </div>
+          </div>
+
+          <div class="full button-group-vertical">
+            <div class="button-row">
+              <button class="btn-add" id="saveBtn" type="submit">新增紀錄</button>
+              <button class="btn-cancel" id="cancelEditBtn" onclick="cancelEdit()" type="button" hidden>取消修改</button>
+              <button class="btn-clear" onclick="clearData()" type="button">清除全部</button>
+            </div>
+            <div class="button-row">
+              <button class="btn-slate" onclick="window.print()" type="button">匯出 PDF 報告</button>
+              <button class="btn-export" onclick="exportCSV()" type="button">匯出 CSV</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="notice form-note">資料會儲存在這台電腦目前使用的瀏覽器中，換電腦或換瀏覽器不會同步。</div>
+      </div>
+
+      <div class="card">
+        <h3>搜尋與篩選</h3>
+        <label for="search">關鍵字搜尋</label>
+        <input type="text" id="search" placeholder="搜尋事件、原因、相關人員..." oninput="debouncedRender()">
+        <div class="button-row">
+          <button class="btn-filter" onclick="filterMonth()" type="button">本月</button>
+          <button class="btn-filter" onclick="clearFilter()" type="button">全部</button>
+        </div>
+        <div class="notice form-note" id="filterStatus">目前篩選：全部</div>
+      </div>
+    </section>
+
+    <section class="stack">
+      <div class="card">
+        <h3>分析總覽</h3>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="stat-label">總數</div><div class="stat-value" id="total">0</div></div>
+          <div class="stat-box"><div class="stat-label">高</div><div class="stat-value" id="highCount">0</div></div>
+          <div class="stat-box"><div class="stat-label">中</div><div class="stat-value" id="mediumCount">0</div></div>
+          <div class="stat-box"><div class="stat-label">低</div><div class="stat-value" id="lowCount">0</div></div>
+          <div class="stat-box"><div class="stat-label">內部</div><div class="stat-value" id="internalCount">0</div></div>
+          <div class="stat-box"><div class="stat-label">外部</div><div class="stat-value" id="externalCount">0</div></div>
+          <div class="stat-box"><div class="stat-label">最常原因</div><div class="stat-value small" id="topReason">無</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>圖表</h3>
+        <div class="charts">
+          <div class="chart-panel"><h4>嚴重程度</h4><div class="chart-box"><canvas id="levelChart"></canvas></div></div>
+          <div class="chart-panel"><h4>每日事件數</h4><div class="chart-box"><canvas id="dateChart"></canvas></div></div>
+          <div class="chart-panel"><h4>原因 Top 5</h4><div class="chart-box"><canvas id="reasonChart"></canvas></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="card table-card">
+    <div class="table-tools">
+      <h3 style="margin:0;">紀錄列表</h3>
+      <div class="notice" id="listCount">目前顯示 0 筆</div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th data-sort="date" onclick="handleSort('date')">日期 <span class="sort-icon"></span></th>
+            <th>照片</th>
+            <th>事件</th>
+            <th>原因</th>
+            <th>相關人員</th>
+            <th>填寫人員</th>
+            <th data-sort="ownership" onclick="handleSort('ownership')">問題歸屬 <span class="sort-icon"></span></th>
+            <th data-sort="level" onclick="handleSort('level')">嚴重 <span class="sort-icon"></span></th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<script>
+let data = loadRecords();
+let filteredData = [];
+let currentFilter = "all";
+let editingDataId = null;
+let selectedOwnership = "internal";
+
+let sortField = "date";
+let sortDesc = true;
+
+let levelChart = null, dateChart = null, reasonChart = null;
+
+// --- 工具與優化函式 ---
+function debounce(func, delay) {
+  let timer;
+  return function (...args) { clearTimeout(timer); timer = setTimeout(() => func.apply(this, args), delay); };
+}
+
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerText = message;
+  container.appendChild(toast);
+  setTimeout(() => { if(container.contains(toast)) container.removeChild(toast); }, 3000);
+}
+
+function updateDatalists() {
+  const reasons = new Set(), relateds = new Set(), reporters = new Set();
+  data.forEach(d => {
+    if (d.reason) reasons.add(d.reason.trim());
+    if (d.related) relateds.add(d.related.trim());
+    if (d.reporter) reporters.add(d.reporter.trim());
+  });
+  const createOptions = (set) => [...set].filter(Boolean).map(val => `<option value="${escapeHTML(val)}">`).join('');
+  document.getElementById('reason-list').innerHTML = createOptions(reasons);
+  document.getElementById('related-list').innerHTML = createOptions(relateds);
+  document.getElementById('reporter-list').innerHTML = createOptions(reporters);
+}
+
+const debouncedRender = debounce(render, 300);
+
+// --- 核心邏輯 ---
+function loadRecords() {
+  try { return JSON.parse(localStorage.getItem("records")) || []; }
+  catch (e) { console.error("讀取資料失敗：", e); return []; }
+}
+
+function saveRecords() {
+  try {
+    localStorage.setItem("records", JSON.stringify(data));
+    updateDatalists();
+  } catch(e) {
+    alert("⚠️ 儲存失敗！可能是上傳的照片容量太大了，超過了瀏覽器的 5MB 限制。請嘗試刪除一些舊照片，或使用檔案較小的圖片。");
+    console.error("儲存失敗:", e);
+  }
+}
+
+function todayLocalString() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+function currentMonthString() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+}
+function normalizeText(value) { return String(value ?? "").trim(); }
+function levelText(level) { return level === "high" ? "高" : (level === "medium" ? "中" : "低"); }
+function ownershipText(ownership) { return ownership === "external" ? "外部" : "內部"; }
+function ownershipClass(ownership) { return ownership === "external" ? "owner-external" : "owner-internal"; }
+
+function makeRecordId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
+
+function setOwnership(value) {
+  selectedOwnership = value === "external" ? "external" : "internal";
+  document.getElementById("ownership").value = selectedOwnership;
+  document.getElementById("ownerInternalBtn").classList.toggle("active", selectedOwnership === "internal");
+  document.getElementById("ownerExternalBtn").classList.toggle("active", selectedOwnership === "external");
+}
+
+function resetForm() {
+  editingDataId = null;
+  document.getElementById("formTitle").innerText = "新增紀錄";
+  document.getElementById("formMode").innerText = "必填：帶有 * 號的欄位";
+  document.getElementById("saveBtn").innerText = "新增紀錄";
+  document.getElementById("cancelEditBtn").hidden = true;
+  document.getElementById("formCard").classList.remove("edit-mode");
+  document.getElementById("formMode").classList.remove("edit-active");
+
+  document.getElementById("date").value = todayLocalString();
+  document.getElementById("time").value = new Date().toTimeString().slice(0, 5);
+  document.getElementById("event").value = "";
+  document.getElementById("reason").value = "";
+  document.getElementById("related").value = "";
+  document.getElementById("reporter").value = "";
+  document.getElementById("level").value = "low";
+  setOwnership("internal");
+  
+  document.getElementById("photo").value = "";
+  document.getElementById("currentPhotoInfo").style.display = "none";
+}
+
+function cancelEdit() { if(confirm("確定要取消修改嗎？目前輸入的內容將會遺失。")) resetForm(); }
+
+function handleSort(field) {
+  if (sortField === field) sortDesc = !sortDesc;
+  else { sortField = field; sortDesc = field === 'date' || field === 'time'; }
+  render();
+}
+
+function updateSortIcons() {
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    const icon = th.querySelector('.sort-icon');
+    if (th.getAttribute('data-sort') === sortField) icon.innerHTML = sortDesc ? '▼' : '▲';
+    else icon.innerHTML = '';
+  });
+}
+
+function render() {
+  const keyword = document.getElementById("search").value.trim().toLowerCase();
+  filteredData = data.filter(d => {
+    const matchSearch = normalizeText(d.event).toLowerCase().includes(keyword) || normalizeText(d.reason).toLowerCase().includes(keyword) || normalizeText(d.related).toLowerCase().includes(keyword) || normalizeText(d.reporter).toLowerCase().includes(keyword) || normalizeText(ownershipText(d.ownership)).toLowerCase().includes(keyword) || normalizeText(d.date).includes(keyword);
+    let matchMonth = true;
+    if (currentFilter === "month") matchMonth = normalizeText(d.date).startsWith(currentMonthString());
+    return matchSearch && matchMonth;
+  });
+
+  filteredData.sort((a, b) => {
+    let valA = a[sortField] || "", valB = b[sortField] || "";
+    if (sortField === 'level') {
+      const weight = { high: 3, medium: 2, low: 1 };
+      valA = weight[a.level] || 0; valB = weight[b.level] || 0;
+    }
+    if (valA < valB) return sortDesc ? 1 : -1;
+    if (valA > valB) return sortDesc ? -1 : 1;
+    return 0;
+  });
+
+  renderTable(); analyze(); drawCharts(); updateFilterText(); updateSortIcons();
+}
+
+function renderTable() {
+  const tb = document.getElementById("tb");
+  tb.innerHTML = "";
+  if (filteredData.length === 0) {
+    let emptyMsg = "🌱 目前還沒有相關紀錄喔！在上方新增一筆試試看吧";
+    if(data.length > 0) emptyMsg = "找不到符合關鍵字的紀錄 😅";
+    tb.innerHTML = `<tr><td colspan="9" class="empty">${emptyMsg}</td></tr>`;
+  } else {
+    tb.innerHTML = filteredData.map(r => `
+      <tr>
+        <td>
+          <div>${escapeHTML(r.date)}</div>
+          <div style="font-size:12px;color:var(--muted);">${escapeHTML(r.time || "")}</div>
+        </td>
+        <td>${r.photoBase64 ? `<img src="${r.photoBase64}" class="thumb-img" alt="現場照片" onclick="window.open('${r.photoBase64}')" title="點擊檢視大圖">` : '<span style="color:var(--muted)">無</span>'}</td>
+        <td class="event-cell">${escapeHTML(r.event)}</td>
+        <td class="event-cell">${escapeHTML(r.reason || "-")}</td>
+        <td>${escapeHTML(r.related || "-")}</td>
+        <td>${escapeHTML(r.reporter || "-")}</td>
+        <td><span class="badge ${ownershipClass(r.ownership)}">${ownershipText(r.ownership)}</span></td>
+        <td><span class="badge ${escapeHTML(r.level)}">${levelText(r.level)}</span></td>
+        <td class="action-cell">
+          <button class="btn-edit" onclick="editRecord('${r.id}')" type="button">修改</button>
+          <button class="btn-delete" onclick="deleteRecord('${r.id}')" type="button">刪除</button>
+        </td>
+      </tr>
+    `).join("");
+  }
+  document.getElementById("listCount").innerText = `目前顯示 ${filteredData.length} 筆`;
+}
+
+function getFormRecord() {
+  return {
+    date: normalizeText(document.getElementById("date").value),
+    time: normalizeText(document.getElementById("time").value),
+    event: normalizeText(document.getElementById("event").value),
+    reason: normalizeText(document.getElementById("reason").value),
+    related: normalizeText(document.getElementById("related").value),
+    reporter: normalizeText(document.getElementById("reporter").value),
+    level: normalizeText(document.getElementById("level").value) || "low",
+    ownership: normalizeText(document.getElementById("ownership").value) || "internal"
+  };
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
+
+async function addRecord(event) {
+  event.preventDefault();
+  
+  const row = getFormRecord();
+  
+  if (!row.event || !row.reason || !row.related || !row.reporter) {
+    showToast("⚠️ 必填欄位不能只有空白，請確實填寫喔！", "error");
+    return;
+  }
+
+  const saveBtn = document.getElementById("saveBtn");
+  saveBtn.innerText = "處理中...";
+  saveBtn.disabled = true;
+
+  try {
+    data.forEach(d => { if (!d.id) d.id = makeRecordId(); });
+
+    const photoInput = document.getElementById("photo");
+    let newPhotoBase64 = null;
+    
+    if (photoInput.files && photoInput.files.length > 0) {
+      const file = photoInput.files[0];
+      if(file.size > 2 * 1024 * 1024) {
+        alert("這張照片太大了（超過2MB），為了避免系統當機，請壓縮後再上傳喔！");
+        saveBtn.innerText = editingDataId ? "儲存修改" : "新增紀錄";
+        saveBtn.disabled = false;
+        return;
+      }
+      newPhotoBase64 = await fileToBase64(file);
+    }
+
+    if (editingDataId !== null) {
+      const dataIndex = data.findIndex(d => d.id === editingDataId);
+      if (dataIndex !== -1) {
+        const existingPhoto = data[dataIndex].photoBase64;
+        data[dataIndex] = { 
+          ...data[dataIndex], 
+          ...row, 
+          photoBase64: newPhotoBase64 !== null ? newPhotoBase64 : existingPhoto,
+          updatedAt: new Date().toISOString() 
+        };
+        showToast("✅ 修改成功");
+      }
+    } else {
+      data.unshift({
+        ...row,
+        id: makeRecordId(),
+        photoBase64: newPhotoBase64,
+        createdAt: new Date().toISOString()
+      });
+      showToast("✅ 新增成功");
+    }
+
+    saveRecords();
+    resetForm();
+    render();
+    document.getElementById("event").focus();
+
+  } catch (error) {
+    console.error(error);
+    showToast("發生錯誤，請稍後再試", "error");
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.innerText = "新增紀錄";
+  }
+}
+
+function editRecord(id) {
+  const record = data.find(d => d.id === id);
+  if (!record) return;
+
+  editingDataId = id;
+  document.getElementById("date").value = record.date || todayLocalString();
+  document.getElementById("time").value = record.time || new Date().toTimeString().slice(0, 5);
+  document.getElementById("event").value = record.event || "";
+  document.getElementById("reason").value = record.reason || "";
+  document.getElementById("related").value = record.related || "";
+  document.getElementById("reporter").value = record.reporter || "";
+  document.getElementById("level").value = record.level || "low";
+  setOwnership(record.ownership || "internal");
+
+  const infoText = document.getElementById("currentPhotoInfo");
+  if(record.photoBase64) {
+    infoText.style.display = "block";
+  } else {
+    infoText.style.display = "none";
+  }
+  document.getElementById("photo").value = "";
+
+  document.getElementById("formTitle").innerText = "修改紀錄";
+  document.getElementById("formMode").innerText = "目前為修改模式";
+  document.getElementById("saveBtn").innerText = "儲存修改";
+  document.getElementById("cancelEditBtn").hidden = false;
+  document.getElementById("formCard").classList.add("edit-mode");
+  document.getElementById("formMode").classList.add("edit-active");
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function deleteRecord(id) {
+  const record = data.find(d => d.id === id);
+  if (!record) return;
+  const label = record.event ? `「${record.event}」` : "這筆紀錄";
+  if (!confirm(`確定要刪除 ${label} 嗎？此動作無法復原。`)) return;
+
+  data = data.filter(d => d.id !== id);
+  if (editingDataId === id) resetForm();
+  saveRecords(); render(); showToast("🗑️ 紀錄已刪除");
+}
+
+function getChartTextColor() { return getComputedStyle(document.body).getPropertyValue("--muted").trim(); }
+function getChartGridColor() { return getComputedStyle(document.body).getPropertyValue("--border").trim(); }
+
+function commonChartOptions(extra = {}) {
+  return { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(17, 24, 39, 0.92)", padding: 10 } }, scales: { x: { ticks: { color: getChartTextColor() }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: getChartTextColor(), precision: 0 }, grid: { color: getChartGridColor() } } }, ...extra };
+}
+
+function analyze() {
+  let high = 0, medium = 0, low = 0, internal = 0, external = 0;
+  const reasonMap = {};
+  filteredData.forEach(d => {
+    if (d.level === "high") high++; else if (d.level === "medium") medium++; else low++;
+    if (d.ownership === "external") external++; else internal++;
+    const reason = normalizeText(d.reason);
+    if (reason) reasonMap[reason] = (reasonMap[reason] || 0) + 1;
+  });
+  document.getElementById("total").innerText = filteredData.length;
+  document.getElementById("highCount").innerText = high;
+  document.getElementById("mediumCount").innerText = medium;
+  document.getElementById("lowCount").innerText = low;
+  document.getElementById("internalCount").innerText = internal;
+  document.getElementById("externalCount").innerText = external;
+  const top = Object.entries(reasonMap).sort((a, b) => b[1] - a[1])[0];
+  document.getElementById("topReason").innerText = top ? `${top[0]}（${top[1]}）` : "無";
+}
+
+function drawCharts() {
+  const levelCount = { low: 0, medium: 0, high: 0 };
+  filteredData.forEach(d => { if (levelCount[d.level] !== undefined) levelCount[d.level]++; });
+  if (levelChart) levelChart.destroy();
+  levelChart = new Chart(document.getElementById("levelChart"), { type: "bar", data: { labels: ["低", "中", "高"], datasets: [{ data: [levelCount.low, levelCount.medium, levelCount.high], backgroundColor: ["#16a34a", "#d97706", "#dc2626"], borderRadius: 6 }] }, options: commonChartOptions() });
+
+  const dateMap = {};
+  filteredData.forEach(d => { const date = normalizeText(d.date); if (date) dateMap[date] = (dateMap[date] || 0) + 1; });
+  const dates = Object.keys(dateMap).sort();
+  const counts = dates.map(d => dateMap[d]);
+  if (dateChart) dateChart.destroy();
+  dateChart = new Chart(document.getElementById("dateChart"), { type: "line", data: { labels: dates.length ? dates : [""], datasets: [{ data: counts.length ? counts : [0], borderColor: "#2563eb", backgroundColor: "rgba(37, 99, 235, 0.14)", pointRadius: 3, fill: true, tension: 0.35 }] }, options: commonChartOptions() });
+
+  const reasonMap = {};
+  filteredData.forEach(d => { const reason = normalizeText(d.reason); if (reason) reasonMap[reason] = (reasonMap[reason] || 0) + 1; });
+  const sorted = Object.entries(reasonMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (reasonChart) reasonChart.destroy();
+  reasonChart = new Chart(document.getElementById("reasonChart"), { type: "bar", data: { labels: sorted.length ? sorted.map(r => r[0]) : [""], datasets: [{ data: sorted.length ? sorted.map(r => r[1]) : [0], backgroundColor: "#0f766e", borderRadius: 6 }] }, options: commonChartOptions({ indexAxis: "y", scales: { x: { beginAtZero: true, grid: { color: getChartGridColor() } }, y: { grid: { display: false } } } }) });
+}
+
+function filterMonth() { currentFilter = "month"; render(); }
+function clearFilter() { currentFilter = "all"; document.getElementById("search").value = ""; render(); }
+function updateFilterText() { const text = currentFilter === "month" ? `本月` : "全部"; document.getElementById("filterStatus").innerText = `目前篩選：${text}`; }
+function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
+
+function exportCSV() {
+  if (filteredData.length === 0) { alert("目前沒有資料可以匯出喔！"); return; }
+  
+  let csv = "\uFEFF日期,時間,照片狀態,事件,原因,相關人員,填寫人員,問題歸屬,嚴重程度\n";
+  filteredData.forEach(r => { 
+    const photoStatus = r.photoBase64 ? "[有附照片，請至系統檢視]" : "[無照片]";
+    
+    csv += [
+      csvCell(r.date), csvCell(r.time), csvCell(photoStatus), 
+      csvCell(r.event), csvCell(r.reason), csvCell(r.related), 
+      csvCell(r.reporter), csvCell(ownershipText(r.ownership)), csvCell(levelText(r.level))
+    ].join(",") + "\n"; 
+  });
+  
+  const a = document.createElement("a"); 
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" })); 
+  a.download = `事件紀錄_${todayLocalString()}.csv`; 
+  document.body.appendChild(a); 
+  a.click(); 
+  document.body.removeChild(a);
+}
+
+function clearData() {
+  if (data.length === 0) return;
+  if (prompt("輸入 DELETE 刪除全部：") === "DELETE") { data = []; saveRecords(); render(); showToast("已清除", "error"); }
+}
+function toggleTheme() { document.body.classList.toggle("dark"); localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light"); updateThemeButton(); drawCharts(); }
+function updateThemeButton() { document.getElementById("themeBtn").innerText = document.body.classList.contains("dark") ? "淺色模式" : "深色模式"; }
+function init() { data.forEach(d => { if (!d.id) d.id = makeRecordId(); }); updateDatalists(); resetForm(); if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark"); updateThemeButton(); render(); }
+
+init();
+</script>
+</body>
+</html>
