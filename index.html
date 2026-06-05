@@ -98,15 +98,11 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 button { min-height: 40px; padding: 9px 13px; border: 1px solid transparent; border-radius: var(--radius); cursor: pointer; font-weight: 800; color: white; transition: transform 0.12s ease, filter 0.12s ease, border-color 0.12s ease; }
 button:hover { filter: brightness(0.96); }
 button:active { transform: translateY(1px); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-add { background: var(--success); }
 .btn-export { background: var(--primary); }
-.btn-clear { background: var(--danger); }
 .btn-filter, .btn-slate { background: var(--slate); }
-.btn-delete { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--danger); color: var(--danger); }
-.btn-edit { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--primary); color: var(--primary); }
-.btn-cancel { background: var(--slate); }
-button[hidden] { display: none; }
 .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
@@ -124,7 +120,7 @@ button[hidden] { display: none; }
 .table-tools { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
 .table-container { max-height: 460px; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 
-table { width: 100%; border-collapse: collapse; min-width: 1150px; } /* 微調表格最小寬度以容納新欄位 */
+table { width: 100%; border-collapse: collapse; min-width: 1050px; }
 th { position: sticky; top: 0; background: var(--surface-muted); z-index: 1; text-align: left; color: var(--muted); font-size: 13px; white-space: nowrap; }
 th[data-sort] { cursor: pointer; user-select: none; transition: background 0.15s; }
 th[data-sort]:hover { background: color-mix(in srgb, var(--surface-muted) 80%, var(--primary) 20%); }
@@ -134,7 +130,6 @@ td { font-size: 14px; }
 tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 32%, transparent); }
 
 .event-cell { max-width: 250px; white-space: pre-wrap; }
-.action-cell { width: 1%; white-space: nowrap; }
 
 .ownership-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .ownership-btn { background: var(--surface); color: var(--text); border-color: var(--border); }
@@ -151,19 +146,7 @@ body.dark .badge.low { color: #bbf7d0; }
 .badge.owner-internal { background: var(--primary-soft); color: var(--primary-strong); }
 .badge.owner-external { background: var(--warning-soft); color: #92400e; }
 
-.thumb-img {
-  width: 48px;
-  height: 48px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-.thumb-img:hover { transform: scale(1.1); box-shadow: var(--shadow); }
-
-.status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 999px; background: var(--surface-muted); border: 1px solid var(--border); color: var(--muted); font-size: 13px; font-weight: 700; transition: all 0.2s ease; }
-.status-pill.edit-active { color: var(--danger); font-weight: 900; background: var(--danger-soft); border-color: var(--danger); }
+.status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 999px; background: var(--surface-muted); border: 1px solid var(--border); color: var(--muted); font-size: 13px; font-weight: 700; }
 .empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 15px; }
 .notice { font-size: 13px; color: var(--muted); line-height: 1.6; }
 .form-note { margin-top: 10px; }
@@ -185,7 +168,7 @@ body.dark .badge.low { color: #bbf7d0; }
 
 @media print {
   body { background: white; color: black; }
-  #themeBtn, #formCard, .card:nth-child(2), .button-row, .button-group-vertical, .action-cell, .table-tools .notice { display: none !important; }
+  #themeBtn, #formCard, .card:nth-child(2), .button-row, .button-group-vertical, .table-tools .notice { display: none !important; }
   .app-shell { width: 100%; margin: 0; padding: 0; }
   .container { display: block; padding: 0; }
   .table-card { margin: 20px 0; box-shadow: none; border: none; padding: 0; }
@@ -193,7 +176,6 @@ body.dark .badge.low { color: #bbf7d0; }
   table { width: 100%; border-collapse: collapse; min-width: auto; }
   th, td { border: 1px solid #ddd; padding: 8px; }
   th { background: #f0f0f0 !important; color: black !important; }
-  .action-cell, th:last-child { display: none; }
   .charts { break-inside: avoid; }
 }
 </style>
@@ -240,9 +222,8 @@ body.dark .badge.low { color: #bbf7d0; }
           </div>
 
           <div class="full">
-            <label for="photo" style="color: var(--danger);">現場照片 (⚠️ 空間有限，請盡量上傳小於 1MB 的圖片)</label>
+            <label for="photo" style="color: var(--primary);">現場照片 (選填，將自動存入雲端硬碟)</label>
             <input type="file" id="photo" accept="image/*">
-            <div id="currentPhotoInfo" style="font-size: 12px; color: var(--primary); margin-top: 4px; display: none;">目前已有一張照片，上傳新照片將會覆蓋。</div>
           </div>
 
           <div>
@@ -277,9 +258,7 @@ body.dark .badge.low { color: #bbf7d0; }
 
           <div class="full button-group-vertical">
             <div class="button-row">
-              <button class="btn-add" id="saveBtn" type="submit">新增紀錄</button>
-              <button class="btn-cancel" id="cancelEditBtn" onclick="cancelEdit()" type="button" hidden>取消修改</button>
-              <button class="btn-clear" onclick="clearData()" type="button">清除全部</button>
+              <button class="btn-add" id="saveBtn" type="submit">新增同步至雲端</button>
             </div>
             <div class="button-row">
               <button class="btn-slate" onclick="window.print()" type="button">匯出 PDF 報告</button>
@@ -288,7 +267,7 @@ body.dark .badge.low { color: #bbf7d0; }
           </div>
         </form>
 
-        <div class="notice form-note">資料會儲存在這台電腦目前使用的瀏覽器中，換電腦或換瀏覽器不會同步。</div>
+        <div class="notice form-note">✅ 資料將自動同步至 Google 試算表，所有人皆可檢視最新進度。</div>
       </div>
 
       <div class="card">
@@ -330,8 +309,8 @@ body.dark .badge.low { color: #bbf7d0; }
 
   <section class="card table-card">
     <div class="table-tools">
-      <h3 style="margin:0;">紀錄列表</h3>
-      <div class="notice" id="listCount">目前顯示 0 筆</div>
+      <h3 style="margin:0;">雲端紀錄列表</h3>
+      <div class="notice" id="listCount">準備連線中...</div>
     </div>
 
     <div class="table-container">
@@ -346,10 +325,11 @@ body.dark .badge.low { color: #bbf7d0; }
             <th>填寫人員</th>
             <th data-sort="ownership" onclick="handleSort('ownership')">問題歸屬 <span class="sort-icon"></span></th>
             <th data-sort="level" onclick="handleSort('level')">嚴重 <span class="sort-icon"></span></th>
-            <th>操作</th>
           </tr>
         </thead>
-        <tbody id="tb"></tbody>
+        <tbody id="tb">
+          <tr><td colspan="8" class="empty">🔄 正在與 Google 試算表連線載入資料，請稍候...</td></tr>
+        </tbody>
       </table>
     </div>
   </section>
@@ -358,18 +338,17 @@ body.dark .badge.low { color: #bbf7d0; }
 <div id="toastContainer" class="toast-container"></div>
 
 <script>
-let data = loadRecords();
+// --- 核心：你的專屬 API 通道 ---
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwPSvzxvuGHwiPv5C0GJHhe2LzDk85KthcELKbhVt4qyYkemJf676wtVQrBA360mwrK/exec";
+
+let data = [];
 let filteredData = [];
 let currentFilter = "all";
-let editingDataId = null;
 let selectedOwnership = "internal";
-
 let sortField = "date";
 let sortDesc = true;
-
 let levelChart = null, dateChart = null, reasonChart = null;
 
-// --- 工具與優化函式 ---
 function debounce(func, delay) {
   let timer;
   return function (...args) { clearTimeout(timer); timer = setTimeout(() => func.apply(this, args), delay); };
@@ -399,22 +378,6 @@ function updateDatalists() {
 
 const debouncedRender = debounce(render, 300);
 
-// --- 核心邏輯 ---
-function loadRecords() {
-  try { return JSON.parse(localStorage.getItem("records")) || []; }
-  catch (e) { console.error("讀取資料失敗：", e); return []; }
-}
-
-function saveRecords() {
-  try {
-    localStorage.setItem("records", JSON.stringify(data));
-    updateDatalists();
-  } catch(e) {
-    alert("⚠️ 儲存失敗！可能是上傳的照片容量太大了，超過了瀏覽器的 5MB 限制。請嘗試刪除一些舊照片，或使用檔案較小的圖片。");
-    console.error("儲存失敗:", e);
-  }
-}
-
 function todayLocalString() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -432,7 +395,6 @@ function normalizeText(value) { return String(value ?? "").trim(); }
 function levelText(level) { return level === "high" ? "高" : (level === "medium" ? "中" : "低"); }
 function ownershipText(ownership) { return ownership === "external" ? "外部" : "內部"; }
 function ownershipClass(ownership) { return ownership === "external" ? "owner-external" : "owner-internal"; }
-
 function makeRecordId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
 function setOwnership(value) {
@@ -443,14 +405,6 @@ function setOwnership(value) {
 }
 
 function resetForm() {
-  editingDataId = null;
-  document.getElementById("formTitle").innerText = "新增紀錄";
-  document.getElementById("formMode").innerText = "必填：帶有 * 號的欄位";
-  document.getElementById("saveBtn").innerText = "新增紀錄";
-  document.getElementById("cancelEditBtn").hidden = true;
-  document.getElementById("formCard").classList.remove("edit-mode");
-  document.getElementById("formMode").classList.remove("edit-active");
-
   document.getElementById("date").value = todayLocalString();
   document.getElementById("time").value = new Date().toTimeString().slice(0, 5);
   document.getElementById("event").value = "";
@@ -459,12 +413,8 @@ function resetForm() {
   document.getElementById("reporter").value = "";
   document.getElementById("level").value = "low";
   setOwnership("internal");
-  
   document.getElementById("photo").value = "";
-  document.getElementById("currentPhotoInfo").style.display = "none";
 }
-
-function cancelEdit() { if(confirm("確定要取消修改嗎？目前輸入的內容將會遺失。")) resetForm(); }
 
 function handleSort(field) {
   if (sortField === field) sortDesc = !sortDesc;
@@ -507,31 +457,35 @@ function renderTable() {
   const tb = document.getElementById("tb");
   tb.innerHTML = "";
   if (filteredData.length === 0) {
-    let emptyMsg = "🌱 目前還沒有相關紀錄喔！在上方新增一筆試試看吧";
+    let emptyMsg = "🌱 雲端目前還沒有相關紀錄喔！在上方新增一筆試試看吧";
     if(data.length > 0) emptyMsg = "找不到符合關鍵字的紀錄 😅";
-    tb.innerHTML = `<tr><td colspan="9" class="empty">${emptyMsg}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="8" class="empty">${emptyMsg}</td></tr>`;
   } else {
-    tb.innerHTML = filteredData.map(r => `
+    tb.innerHTML = filteredData.map(r => {
+      // 判斷雲端是否有照片連結
+      let photoContent = '<span style="color:var(--muted)">無</span>';
+      if (r.photoBase64 && r.photoBase64.includes("http")) {
+        photoContent = `<a href="${r.photoBase64}" target="_blank" class="badge owner-internal" style="text-decoration:none;">查看雲端照片</a>`;
+      }
+
+      return `
       <tr>
         <td>
           <div>${escapeHTML(r.date)}</div>
           <div style="font-size:12px;color:var(--muted);">${escapeHTML(r.time || "")}</div>
         </td>
-        <td>${r.photoBase64 ? `<img src="${r.photoBase64}" class="thumb-img" alt="現場照片" onclick="window.open('${r.photoBase64}')" title="點擊檢視大圖">` : '<span style="color:var(--muted)">無</span>'}</td>
+        <td>${photoContent}</td>
         <td class="event-cell">${escapeHTML(r.event)}</td>
         <td class="event-cell">${escapeHTML(r.reason || "-")}</td>
         <td>${escapeHTML(r.related || "-")}</td>
         <td>${escapeHTML(r.reporter || "-")}</td>
         <td><span class="badge ${ownershipClass(r.ownership)}">${ownershipText(r.ownership)}</span></td>
         <td><span class="badge ${escapeHTML(r.level)}">${levelText(r.level)}</span></td>
-        <td class="action-cell">
-          <button class="btn-edit" onclick="editRecord('${r.id}')" type="button">修改</button>
-          <button class="btn-delete" onclick="deleteRecord('${r.id}')" type="button">刪除</button>
-        </td>
       </tr>
-    `).join("");
+      `
+    }).join("");
   }
-  document.getElementById("listCount").innerText = `目前顯示 ${filteredData.length} 筆`;
+  document.getElementById("listCount").innerText = `雲端已同步 ${filteredData.length} 筆資料`;
 }
 
 function getFormRecord() {
@@ -556,119 +510,61 @@ function fileToBase64(file) {
   });
 }
 
+// --- 核心：寫入資料到 Google 試算表 ---
 async function addRecord(event) {
   event.preventDefault();
   
   const row = getFormRecord();
-  
   if (!row.event || !row.reason || !row.related || !row.reporter) {
     showToast("⚠️ 必填欄位不能只有空白，請確實填寫喔！", "error");
     return;
   }
 
   const saveBtn = document.getElementById("saveBtn");
-  saveBtn.innerText = "處理中...";
+  saveBtn.innerText = "☁️ 正在同步到 Google 試算表...";
   saveBtn.disabled = true;
 
   try {
-    data.forEach(d => { if (!d.id) d.id = makeRecordId(); });
-
     const photoInput = document.getElementById("photo");
     let newPhotoBase64 = null;
     
     if (photoInput.files && photoInput.files.length > 0) {
-      const file = photoInput.files[0];
-      if(file.size > 2 * 1024 * 1024) {
-        alert("這張照片太大了（超過2MB），為了避免系統當機，請壓縮後再上傳喔！");
-        saveBtn.innerText = editingDataId ? "儲存修改" : "新增紀錄";
-        saveBtn.disabled = false;
-        return;
-      }
-      newPhotoBase64 = await fileToBase64(file);
+      newPhotoBase64 = await fileToBase64(photoInput.files[0]);
     }
 
-    if (editingDataId !== null) {
-      const dataIndex = data.findIndex(d => d.id === editingDataId);
-      if (dataIndex !== -1) {
-        const existingPhoto = data[dataIndex].photoBase64;
-        data[dataIndex] = { 
-          ...data[dataIndex], 
-          ...row, 
-          photoBase64: newPhotoBase64 !== null ? newPhotoBase64 : existingPhoto,
-          updatedAt: new Date().toISOString() 
-        };
-        showToast("✅ 修改成功");
-      }
-    } else {
-      data.unshift({
-        ...row,
-        id: makeRecordId(),
-        photoBase64: newPhotoBase64,
-        createdAt: new Date().toISOString()
-      });
-      showToast("✅ 新增成功");
-    }
+    let newRecord = {
+      ...row,
+      id: makeRecordId(),
+      photoBase64: newPhotoBase64
+    };
 
-    saveRecords();
+    // 透過網路 POST 傳送到 Apps Script
+    await fetch(GAS_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(newRecord)
+    });
+
+    showToast("✅ 已成功寫入 Google 試算表！");
+    
+    // 為了讓使用者立刻看到，我們先把資料加進畫面
+    data.push(newRecord);
     resetForm();
     render();
     document.getElementById("event").focus();
 
   } catch (error) {
     console.error(error);
-    showToast("發生錯誤，請稍後再試", "error");
+    showToast("同步失敗，請檢查網路連線", "error");
   } finally {
     saveBtn.disabled = false;
-    saveBtn.innerText = "新增紀錄";
+    saveBtn.innerText = "新增同步至雲端";
   }
-}
-
-function editRecord(id) {
-  const record = data.find(d => d.id === id);
-  if (!record) return;
-
-  editingDataId = id;
-  document.getElementById("date").value = record.date || todayLocalString();
-  document.getElementById("time").value = record.time || new Date().toTimeString().slice(0, 5);
-  document.getElementById("event").value = record.event || "";
-  document.getElementById("reason").value = record.reason || "";
-  document.getElementById("related").value = record.related || "";
-  document.getElementById("reporter").value = record.reporter || "";
-  document.getElementById("level").value = record.level || "low";
-  setOwnership(record.ownership || "internal");
-
-  const infoText = document.getElementById("currentPhotoInfo");
-  if(record.photoBase64) {
-    infoText.style.display = "block";
-  } else {
-    infoText.style.display = "none";
-  }
-  document.getElementById("photo").value = "";
-
-  document.getElementById("formTitle").innerText = "修改紀錄";
-  document.getElementById("formMode").innerText = "目前為修改模式";
-  document.getElementById("saveBtn").innerText = "儲存修改";
-  document.getElementById("cancelEditBtn").hidden = false;
-  document.getElementById("formCard").classList.add("edit-mode");
-  document.getElementById("formMode").classList.add("edit-active");
-
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function deleteRecord(id) {
-  const record = data.find(d => d.id === id);
-  if (!record) return;
-  const label = record.event ? `「${record.event}」` : "這筆紀錄";
-  if (!confirm(`確定要刪除 ${label} 嗎？此動作無法復原。`)) return;
-
-  data = data.filter(d => d.id !== id);
-  if (editingDataId === id) resetForm();
-  saveRecords(); render(); showToast("🗑️ 紀錄已刪除");
 }
 
 function getChartTextColor() { return getComputedStyle(document.body).getPropertyValue("--muted").trim(); }
 function getChartGridColor() { return getComputedStyle(document.body).getPropertyValue("--border").trim(); }
-
 function commonChartOptions(extra = {}) {
   return { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(17, 24, 39, 0.92)", padding: 10 } }, scales: { x: { ticks: { color: getChartTextColor() }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: getChartTextColor(), precision: 0 }, grid: { color: getChartGridColor() } } }, ...extra };
 }
@@ -723,7 +619,6 @@ function exportCSV() {
   let csv = "\uFEFF日期,時間,照片狀態,事件,原因,相關人員,填寫人員,問題歸屬,嚴重程度\n";
   filteredData.forEach(r => { 
     const photoStatus = r.photoBase64 ? "[有附照片，請至系統檢視]" : "[無照片]";
-    
     csv += [
       csvCell(r.date), csvCell(r.time), csvCell(photoStatus), 
       csvCell(r.event), csvCell(r.reason), csvCell(r.related), 
@@ -739,13 +634,36 @@ function exportCSV() {
   document.body.removeChild(a);
 }
 
-function clearData() {
-  if (data.length === 0) return;
-  if (prompt("輸入 DELETE 刪除全部：") === "DELETE") { data = []; saveRecords(); render(); showToast("已清除", "error"); }
-}
 function toggleTheme() { document.body.classList.toggle("dark"); localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light"); updateThemeButton(); drawCharts(); }
 function updateThemeButton() { document.getElementById("themeBtn").innerText = document.body.classList.contains("dark") ? "淺色模式" : "深色模式"; }
-function init() { data.forEach(d => { if (!d.id) d.id = makeRecordId(); }); updateDatalists(); resetForm(); if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark"); updateThemeButton(); render(); }
+
+// --- 核心：從 Google 試算表讀取資料 ---
+async function fetchCloudData() {
+  try {
+    const response = await fetch(GAS_URL);
+    const cloudData = await response.json();
+    
+    // 將最新資料設定為從雲端抓下來的內容
+    data = cloudData;
+    
+    updateDatalists();
+    render();
+    showToast("☁️ 已成功載入雲端最新資料");
+  } catch (error) {
+    console.error(error);
+    document.getElementById("tb").innerHTML = `<tr><td colspan="8" class="empty">❌ 讀取雲端資料失敗，請檢查網路後重新整理網頁。</td></tr>`;
+    showToast("讀取失敗", "error");
+  }
+}
+
+function init() {
+  resetForm(); 
+  if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark"); 
+  updateThemeButton(); 
+  
+  // 網頁一打開，立刻觸發去雲端拿資料
+  fetchCloudData();
+}
 
 init();
 </script>
