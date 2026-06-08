@@ -68,7 +68,6 @@ button, input, select, textarea { font: inherit; }
 .title-mark { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: var(--radius); background: var(--primary); color: white; font-size: 18px; }
 .subtitle { font-size: 13px; color: var(--muted); margin-top: 6px; }
 
-/* 🌟 新增：指揮中心感即時狀態列樣式 */
 .live-status-bar {
   display: flex;
   flex-wrap: wrap;
@@ -121,7 +120,7 @@ button:hover { filter: brightness(0.96); }
 button:active { transform: translateY(1px); }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.btn-add { background: var(--primary); } /* 🌟 修正：主按鈕收斂為藍色 */
+.btn-add { background: var(--primary); } 
 .btn-export, .btn-filter, .btn-slate, .btn-ghost { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
 .btn-export:hover, .btn-filter:hover, .btn-slate:hover, .btn-ghost:hover { background: var(--surface-muted); }
 
@@ -147,7 +146,7 @@ button[hidden] { display: none; }
 .charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .chart-panel { min-width: 0; }
 .chart-panel h4 { margin: 0 0 10px; color: var(--muted); font-size: 13px; font-weight: 800; }
-.chart-box { height: 210px; position: relative; } /* 🌟 修正：圖表高度微調縮小至 210px */
+.chart-box { height: 210px; position: relative; } 
 
 .table-card { margin: 0 28px 28px; }
 .table-tools { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
@@ -161,7 +160,6 @@ th[data-sort]:hover { background: color-mix(in srgb, var(--surface-muted) 80%, v
 td, th { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 td { font-size: 14px; }
 
-/* 🌟 修正：表格列加上滑動動畫效果與粗體字 */
 tbody tr { transition: background 0.15s ease, transform 0.15s ease; }
 tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 24%, transparent); }
 .event-cell { max-width: 250px; white-space: pre-wrap; font-weight: 700; }
@@ -184,7 +182,6 @@ body.dark .badge.low { color: #bbf7d0; }
 
 .table-photo-container { display: flex; flex-direction: column; gap: 4px; }
 
-/* 🌟 新增：表格內迷你照片按鈕樣式 (取代刺眼的滿版 badge) */
 .btn-table-photo {
   display: inline-flex;
   align-items: center;
@@ -229,7 +226,6 @@ body.dark .badge.low { color: #bbf7d0; }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
 
-/* 🌟 新增：完美手機版「響應式直列卡片化」排版防線 */
 @media (max-width: 720px) {
   .live-status-bar { margin: 0 18px 12px; }
   .table-container { border: none; max-height: none; background: transparent; }
@@ -263,7 +259,8 @@ body.dark .badge.low { color: #bbf7d0; }
     margin-top: 6px;
   }
 }
-</style> </head>
+</style> 
+</head>
 
 <body>
 <div class="app-shell">
@@ -290,7 +287,8 @@ body.dark .badge.low { color: #bbf7d0; }
     <section class="stack">
       <div class="card" id="formCard">
         <div class="section-title">
-          <h3 id="formTitle">新增事件通報</h3> <span class="status-pill" id="formMode">必填：帶有 * 號的欄位</span>
+          <h3 id="formTitle">新增事件通報</h3> 
+          <span class="status-pill" id="formMode">必填：帶有 * 號的欄位</span>
         </div>
 
         <form id="recordForm" class="form-grid" onsubmit="addRecord(event)">
@@ -404,6 +402,13 @@ body.dark .badge.low { color: #bbf7d0; }
       </div>
 
       <div class="card">
+        <h3>最近事件 (最新 5 筆)</h3>
+        <div id="recentEventsList" style="display: grid; gap: 8px; font-size: 13px;">
+          <div style="color: var(--muted); text-align: center; padding: 10px;">🔄 載入中...</div>
+        </div>
+      </div>
+
+      <div class="card">
         <h3>圖表</h3>
         <div class="charts">
           <div class="chart-panel"><h4>嚴重程度</h4><div class="chart-box"><canvas id="levelChart"></canvas></div></div>
@@ -416,7 +421,10 @@ body.dark .badge.low { color: #bbf7d0; }
 
   <section class="card table-card">
     <div class="table-tools">
-      <h3 style="margin:0;">雲端紀錄列表</h3>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <h3 style="margin:0;">雲端紀錄列表</h3>
+        <button class="btn-filter" onclick="fetchCloudData()" type="button" style="min-height: 30px; padding: 2px 10px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">🔄 重新整理</button>
+      </div>
       <div class="notice" id="listCount">準備連線中...</div>
     </div>
 
@@ -515,6 +523,41 @@ function showToast(message, type = 'success') {
   toast.innerText = message;
   container.appendChild(toast);
   setTimeout(() => { if(container.contains(toast)) container.removeChild(toast); }, 3000);
+}
+
+// 💡 修正 1輔助函式：動態渲染「最近事件通報牆」
+function renderRecentEvents() {
+  const container = document.getElementById("recentEventsList");
+  if (!container) return;
+
+  // 複製全域 data 並按時間、日期排序，精準抓取最新 5 筆
+  const sortedAll = [...data].sort((a, b) => {
+    const dateA = formatCloudDate(a.date) + (formatCloudTime(a.time) || "00:00");
+    const dateB = formatCloudDate(b.date) + (formatCloudTime(b.time) || "00:00");
+    return dateB.localeCompare(dateA);
+  });
+
+  const latestItems = sortedAll.slice(0, 5);
+
+  if (latestItems.length === 0) {
+    container.innerHTML = `<div style="color: var(--muted); text-align: center; padding: 10px;">目前無任何通報事件</div>`;
+    return;
+  }
+
+  container.innerHTML = latestItems.map(item => {
+    const cleanDate = formatCloudDate(item.date);
+    const borderLeftColor = item.level === 'high' ? 'var(--danger)' : (item.level === 'medium' ? 'var(--warning)' : 'var(--primary)');
+    const badgeColor = item.level === 'high' ? 'background: var(--danger-soft); color: #991b1b;' : (item.level === 'medium' ? 'background: var(--warning-soft); color: #92400e;' : 'background: var(--success-soft); color: #166534;');
+    return `
+      <div style="padding: 10px; background: var(--surface-muted); border-radius: 4px; border-left: 4px solid ${borderLeftColor}; line-height: 1.45; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: bold;">
+          <span>📅 ${escapeHTML(cleanDate)}（填報人：${escapeHTML(item.reporter)}）</span>
+          <span style="padding: 1px 6px; border-radius: 99px; ${badgeColor}">${levelText(item.level)}</span>
+        </div>
+        <div style="font-weight: 700; word-break: break-all; color: var(--text); font-size: 13px;">${escapeHTML(item.event.slice(0, 55))}${item.event.length > 55 ? '...' : ''}</div>
+      </div>
+    `;
+  }).join("");
 }
 
 function setQuickReason(text) {
@@ -630,6 +673,7 @@ function cancelEdit() {
   }
 }
 
+// 修改快速排序時，頁碼重置回第一頁
 function handleSort(field) {
   if (sortField === field) sortDesc = !sortDesc;
   else { sortField = field; sortDesc = field === 'date' || field === 'time'; }
@@ -667,6 +711,9 @@ function render() {
   });
 
   renderTable(); analyze(); drawCharts(); updateFilterText(); updateSortIcons();
+  
+  // 💡 修正 1 呼叫處：重整資料時同步刷最新通報牆
+  renderRecentEvents();
 }
 
 function changePage(step) {
@@ -712,7 +759,6 @@ function renderTable() {
       
       const urls = normalizePhotoUrls(r.photoUrls);
       if (urls.length > 0) {
-        // 💡 修正：更換為小型優雅的相機按鈕
         photoContent = `<div class="table-photo-container">` + 
           urls.map((url, index) => `<button type="button" class="btn-table-photo" data-action="photo" data-id="${escapeHTML(r.id)}" data-index="${index}">📷 照片 ${index + 1}</button>`).join("") + 
           `</div>`;
@@ -721,7 +767,6 @@ function renderTable() {
       let cleanDate = formatCloudDate(r.date);
       let cleanTime = formatCloudTime(r.time);
 
-      // 💡 修正：為 td 補齊 data-label，以利手機端卡片佈局
       return `
       <tr>
         <td data-label="日期">
@@ -759,6 +804,7 @@ function openLightbox(recordId, index) {
   document.getElementById('lightbox').style.display = 'flex';
 }
 
+// 用來在預覽框裡直接顯示 Google Drive 小縮圖的魔法函式
 function getThumbnailUrl(rawUrl) {
   let match = rawUrl.match(/[-\w]{25,}/);
   if (match && match[0] && rawUrl.includes("drive.google.com")) {
@@ -984,7 +1030,6 @@ async function addRecord(event) {
     showToast(`同步失敗: ${error.message || "請檢查網路"}`, "error");
   } finally {
     saveBtn.disabled = false;
-    // 💡 修正：修改失敗時，按鈕文字依狀態恢復成「儲存修改」而非生硬的同步
     saveBtn.innerText = editingDataId !== null ? "儲存修改" : "送出紀錄";
   }
 }
@@ -1094,7 +1139,6 @@ function commonChartOptions(extra = {}) {
   return { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(17, 24, 39, 0.92)", padding: 10 } }, scales: { x: { ticks: { color: getChartTextColor() }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: getChartTextColor(), precision: 0 }, grid: { color: getChartGridColor() } } }, ...extra };
 }
 
-// 💡 修正：擴充統計邏輯，同時去更新「頂部指揮看列」的即時數據
 function analyze() {
   let high = 0, medium = 0, low = 0, internal = 0, external = 0;
   let todayCount = 0, monthCount = 0;
@@ -1123,7 +1167,6 @@ function analyze() {
   const top = Object.entries(reasonMap).sort((a, b) => b[1] - a[1])[0];
   document.getElementById("topReason").innerText = top ? `${top[0]}（${top[1]}）` : "無";
 
-  // 更新指揮看列看板
   document.getElementById("statToday").innerText = todayCount;
   document.getElementById("statMonth").innerText = monthCount;
   document.getElementById("statHigh").innerText = high;
@@ -1164,7 +1207,10 @@ function exportCSV() {
       csvCell(formatCloudDate(r.date)), csvCell(formatCloudTime(r.time)), csvCell(photoStatus), csvCell(r.event), csvCell(r.reason), csvCell(r.related), csvCell(r.reporter), csvCell(ownershipText(r.ownership)), csvCell(levelText(r.level))
     ].join(",") + "\n"; 
   });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" })); a.download = `事件紀錄.csv`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" })); 
+  // 💡 修正 5：匯出檔名整合當前年月變數
+  a.download = `事件紀錄_${currentMonthString()}.csv`; 
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 function toggleTheme() { document.body.classList.toggle("dark"); localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light"); updateThemeButton(); drawCharts(); }
@@ -1182,12 +1228,16 @@ async function fetchCloudData() {
     updateDatalists();
     render();
 
-    // 💡 修正：成功同步時，更新看列時間
     document.getElementById("statTime").innerText = new Date().toTimeString().slice(0, 5);
+    document.getElementById("statTime").style.color = "var(--muted)"; 
 
   } catch (error) {
     console.error("詳細錯誤資訊：", error);
     updateErrorListCount("讀取失敗");
+    // 💡 修正 3：最後同步狀態在連線失敗時顯示「失敗」並轉為警示紅
+    document.getElementById("statTime").innerText = "失敗";
+    document.getElementById("statTime").style.color = "var(--danger)";
+    
     document.getElementById("tb").innerHTML = `
       <tr><td colspan="9" class="empty" style="color: var(--danger);">
       ❌ 讀取雲端資料失敗！<br><br>
