@@ -983,13 +983,31 @@ function updateThemeButton() { document.getElementById("themeBtn").innerText = d
 async function fetchCloudData() {
   try {
     const response = await fetch(GAS_URL);
+    
+    // 檢查回應狀態碼，若不是 200 OK，主動拋出錯誤
+    if (!response.ok) {
+      throw new Error(`伺服器拒絕連線 (狀態碼: ${response.status})`);
+    }
+
     const cloudData = await response.json();
     data = cloudData;
     updateDatalists();
     render();
+    document.getElementById("listCount").innerText = `雲端已同步 ${filteredData.length} 筆資料`;
+    
   } catch (error) {
-    console.error(error);
-    document.getElementById("tb").innerHTML = `<tr><td colspan="9" class="empty">❌ 讀取雲端資料失敗，請檢查網路後重新整理網頁。</td></tr>`;
+    console.error("詳細錯誤資訊：", error);
+    
+    // 將真實的錯誤原因 (error.message) 直接顯示在表格中央
+    document.getElementById("tb").innerHTML = `
+      <tr>
+        <td colspan="9" class="empty" style="color: var(--danger);">
+          ❌ 讀取雲端資料失敗！<br><br>
+          系統偵測到的具體原因為：<b>${error.message}</b><br>
+          (如果顯示 Failed to fetch，通常代表被公司防火牆阻擋、CORS 限制或擴充功能攔截)
+        </td>
+      </tr>
+    `;
   }
 }
 
