@@ -119,8 +119,8 @@ button[hidden] { display: none; }
 .preview-item img { width: 100%; height: 100%; object-fit: cover; }
 .preview-item .btn-remove-file { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: var(--danger); color: white; border: none; border-radius: 50%; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; min-height: auto; z-index: 10; }
 .preview-item .btn-remove-file:hover { filter: brightness(1.2); }
-/* 區分舊照片的視覺效果 */
-.preview-item.old-photo::after { content: "舊圖"; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; font-size: 10px; text-align: center; padding: 2px 0; }
+/* 🌟 動態抓取 data-label，並確保不阻礙圖片點擊 */
+.preview-item.old-photo::after { content: attr(data-label); position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; font-size: 10px; text-align: center; padding: 2px 0; pointer-events: none; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
 .stat-box { background: var(--surface-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; min-width: 0; }
@@ -414,7 +414,6 @@ let sortDesc = true;
 let levelChart = null, dateChart = null, reasonChart = null;
 
 let selectedFilesArray = [];
-// 🌟 新增：用來記錄修改模式下的舊照片與準備刪除的舊照片
 let retainedOldUrls = [];
 let deletedOldUrls = [];
 
@@ -652,7 +651,6 @@ function openLightbox(recordId, index) {
   document.getElementById('lightbox').style.display = 'flex';
 }
 
-// 💡 用來在預覽框裡直接顯示 Google Drive 小縮圖的魔法函式
 function getThumbnailUrl(rawUrl) {
   let match = rawUrl.match(/[-\w]{25,}/);
   if (match && match[0] && rawUrl.includes("drive.google.com")) {
@@ -665,6 +663,7 @@ function updateLightboxView() {
   let rawUrl = currentLightboxImages[currentLightboxIndex];
   let directUrl = rawUrl;
   
+  // 💡 終極燈箱魔法 API
   let match = rawUrl.match(/[-\w]{25,}/);
   if (match && match[0] && rawUrl.includes("drive.google.com")) {
     directUrl = `https://drive.google.com/thumbnail?id=${match[0]}&sz=w1200`;
@@ -738,7 +737,7 @@ function handleFileSelect(input) {
   input.value = ""; 
 }
 
-// 🌟 升級版預覽：同時渲染「舊照片」與「新照片」
+// 🌟 終極升級版預覽：防破圖、動態編號、超連結查看
 function renderFilePreviews() {
   const container = document.getElementById("filePreviewContainer");
   container.innerHTML = "";
@@ -746,22 +745,39 @@ function renderFilePreviews() {
   // 渲染保留的舊照片
   retainedOldUrls.forEach((url, index) => {
     const item = document.createElement("div");
-    item.className = "preview-item old-photo"; // 加上 old-photo 顯示「舊圖」字樣
+    item.className = "preview-item old-photo"; 
+    
+    // 動態設定編號
+    item.setAttribute("data-label", `舊圖 ${index + 1}`);
+
+    // 把舊照片包成可以點擊另開新分頁的連結
+    const link = document.createElement("a");
+    link.href = url; 
+    link.target = "_blank"; 
+    link.title = "點擊在新分頁查看原圖";
 
     const img = document.createElement("img");
-    img.src = getThumbnailUrl(url); // 轉換為縮圖顯示
+    img.src = getThumbnailUrl(url); 
+    
+    // 防破圖：若被防火牆阻擋，替換成優雅的 SVG 並提示點擊
+    img.onerror = function() {
+      this.onerror = null; 
+      this.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='70'><rect width='70' height='70' fill='%23e2e8f0'/><text x='50%' y='40%' dominant-baseline='middle' text-anchor='middle' font-size='12' fill='%2364748b'>無法預覽</text><text x='50%' y='65%' dominant-baseline='middle' text-anchor='middle' font-size='10' fill='%232563eb' text-decoration='underline'>🔗點擊查看</text></svg>";
+    };
+
+    link.appendChild(img);
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn-remove-file";
     removeBtn.innerHTML = "✕";
     removeBtn.onclick = function() {
-      deletedOldUrls.push(retainedOldUrls[index]); // 記錄這個網址準備去雲端刪除
-      retainedOldUrls.splice(index, 1); // 畫面上移掉
+      deletedOldUrls.push(retainedOldUrls[index]); 
+      retainedOldUrls.splice(index, 1); 
       renderFilePreviews();
     };
 
-    item.appendChild(img);
+    item.appendChild(link);
     item.appendChild(removeBtn);
     container.appendChild(item);
   });
@@ -790,7 +806,6 @@ function renderFilePreviews() {
   });
 }
 
-// 🌟 核心升級：編輯時傳送「保留舊圖」、「刪除舊圖」與「新增的圖」給後端
 async function addRecord(event) {
   event.preventDefault();
   const row = getFormRecord();
@@ -822,7 +837,6 @@ async function addRecord(event) {
       photoBase64: photoPayload 
     };
 
-    // 如果是修改模式，加上新舊照片的資訊給後端
     if (editingDataId !== null) {
       payload.editModeUpdate = true;
       payload.retainedOldUrls = retainedOldUrls.join(",");
@@ -845,7 +859,6 @@ async function addRecord(event) {
       document.getElementById('draftStatus').innerText = "✅ 資料將自動同步至 Google 試算表，所有人皆可檢視與同步。";
     }
 
-    // 重新抓取資料確保列表是最新的照片狀態
     resetForm();
     setTimeout(fetchCloudData, 1500); 
   } catch (error) {
@@ -905,7 +918,6 @@ function editRecord(id) {
 
   document.getElementById("photoLabel").innerText = "照片管理 (可點選 ✕ 刪除舊照片，或選取新照片加入)";
   
-  // 💡 把雲端舊照片倒進陣列，顯示在預覽區塊
   if (record.photoBase64 && record.photoBase64.includes("http")) {
     retainedOldUrls = record.photoBase64.split(",").map(u => u.trim()).filter(Boolean);
   } else {
