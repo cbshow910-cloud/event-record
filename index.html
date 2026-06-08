@@ -525,12 +525,10 @@ function showToast(message, type = 'success') {
   setTimeout(() => { if(container.contains(toast)) container.removeChild(toast); }, 3000);
 }
 
-// 💡 修正 1輔助函式：動態渲染「最近事件通報牆」
 function renderRecentEvents() {
   const container = document.getElementById("recentEventsList");
   if (!container) return;
 
-  // 複製全域 data 並按時間、日期排序，精準抓取最新 5 筆
   const sortedAll = [...data].sort((a, b) => {
     const dateA = formatCloudDate(a.date) + (formatCloudTime(a.time) || "00:00");
     const dateB = formatCloudDate(b.date) + (formatCloudTime(b.time) || "00:00");
@@ -614,6 +612,7 @@ function updateErrorListCount(text) {
   if(el) el.innerText = text;
 }
 
+// 💡 修正：為 td 補齊對應欄位，避免手機響應式標籤遺失
 function escapeHTML(value) {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
@@ -645,6 +644,7 @@ function resetForm(options = { clearDraft: true }) {
   document.getElementById("photoLabel").innerText = "現場照片 (可選多張，將自動智慧壓縮上傳)";
 
   document.getElementById("date").value = todayLocalString();
+  // 💡 修正 4：限制 HTML 日期挑選器最高隻能點選「今天」
   document.getElementById("date").max = todayLocalString();
   document.getElementById("time").value = new Date().toTimeString().slice(0, 5);
   document.getElementById("event").value = "";
@@ -674,7 +674,6 @@ function cancelEdit() {
   }
 }
 
-// 修改快速排序時，頁碼重置回第一頁
 function handleSort(field) {
   if (sortField === field) sortDesc = !sortDesc;
   else { sortField = field; sortDesc = field === 'date' || field === 'time'; }
@@ -713,7 +712,6 @@ function render() {
 
   renderTable(); analyze(); drawCharts(); updateFilterText(); updateSortIcons();
   
-  // 💡 修正 1 呼叫處：重整資料時同步刷最新通報牆
   renderRecentEvents();
 }
 
@@ -805,7 +803,6 @@ function openLightbox(recordId, index) {
   document.getElementById('lightbox').style.display = 'flex';
 }
 
-// 用來在預覽框裡直接顯示 Google Drive 小縮圖的魔法函式
 function getThumbnailUrl(rawUrl) {
   let match = rawUrl.match(/[-\w]{25,}/);
   if (match && match[0] && rawUrl.includes("drive.google.com")) {
@@ -977,19 +974,21 @@ async function addRecord(event) {
     showToast("⚠️ 必填欄位不能只有空白，請確實填寫喔！", "error");
     return;
   }
-  // 💡 新增：時空旅人防堵驗證
-  const now = new Date();
-  const todayStr = todayLocalString();
-  const currentTimeStr = now.toTimeString().slice(0, 5); // 取得目前 hh:mm
 
-  if (row.date > todayStr) {
+  // 💡 修正 4：前端防護網——防堵時空旅人（不借助物件轉換，用最穩固的純字串比對）
+  const localNow = new Date();
+  const systemTodayStr = todayLocalString();
+  const systemCurrentTimeStr = localNow.toTimeString().slice(0, 5);
+
+  if (row.date > systemTodayStr) {
     showToast("⚠️ 發生日期不能選擇未來的日期喔！", "error");
     return;
   }
-  if (row.date === todayStr && row.time && row.time > currentTimeStr) {
+  if (row.date === systemTodayStr && row.time && row.time > systemCurrentTimeStr) {
     showToast("⚠️ 發生時間不能比現在時間還晚喔！", "error");
     return;
   }
+
   const saveBtn = document.getElementById("saveBtn");
   saveBtn.disabled = true;
 
@@ -1086,6 +1085,7 @@ function editRecord(id) {
 
   editingDataId = id;
   document.getElementById("date").value = formatCloudDate(record.date) || todayLocalString();
+  document.getElementById("date").max = todayLocalString(); // 💡 確保修改時最大也隻能選到今天
   document.getElementById("time").value = formatCloudTime(record.time) || "";
   document.getElementById("event").value = record.event || "";
   document.getElementById("reason").value = record.reason || "";
@@ -1222,7 +1222,6 @@ function exportCSV() {
     ].join(",") + "\n"; 
   });
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" })); 
-  // 💡 修正 5：匯出檔名整合當前年月變數
   a.download = `事件紀錄_${currentMonthString()}.csv`; 
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
@@ -1248,7 +1247,6 @@ async function fetchCloudData() {
   } catch (error) {
     console.error("詳細錯誤資訊：", error);
     updateErrorListCount("讀取失敗");
-    // 💡 修正 3：最後同步狀態在連線失敗時顯示「失敗」並轉為警示紅
     document.getElementById("statTime").innerText = "失敗";
     document.getElementById("statTime").style.color = "var(--danger)";
     
