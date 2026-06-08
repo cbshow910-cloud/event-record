@@ -117,8 +117,10 @@ button[hidden] { display: none; }
 .preview-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .preview-item { position: relative; width: 70px; height: 70px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: #eee; }
 .preview-item img { width: 100%; height: 100%; object-fit: cover; }
-.preview-item .btn-remove-file { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: var(--danger); color: white; border: none; border-radius: 50%; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; min-height: auto; }
+.preview-item .btn-remove-file { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: var(--danger); color: white; border: none; border-radius: 50%; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; min-height: auto; z-index: 10; }
 .preview-item .btn-remove-file:hover { filter: brightness(1.2); }
+/* 區分舊照片的視覺效果 */
+.preview-item.old-photo::after { content: "舊圖"; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; font-size: 10px; text-align: center; padding: 2px 0; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
 .stat-box { background: var(--surface-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; min-width: 0; }
@@ -170,11 +172,9 @@ body.dark .badge.low { color: #bbf7d0; }
 .notice { font-size: 13px; color: var(--muted); line-height: 1.6; }
 .form-note { margin-top: 10px; }
 
-/* 🌟 新增：分頁按鈕區塊樣式 */
 .pagination { display: flex; justify-content: center; align-items: center; gap: 12px; padding: 16px; border-top: 1px solid var(--border); background: var(--surface); border-radius: 0 0 var(--radius) var(--radius); }
 .page-info { font-size: 14px; font-weight: 800; color: var(--text); }
 
-/* 🌟 新增：照片燈箱 (Lightbox) 樣式 */
 .lightbox { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
 .lightbox-container { position: relative; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center; }
 .lightbox img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
@@ -265,7 +265,6 @@ body.dark .badge.low { color: #bbf7d0; }
             <label for="photo" id="photoLabel" style="color: var(--primary);">現場照片 (可選多張，將自動智慧壓縮上傳)</label>
             <input type="file" id="photo" accept="image/*" multiple onchange="handleFileSelect(this)">
             <div id="filePreviewContainer" class="preview-container"></div>
-            <div id="currentPhotoInfo" style="font-size: 12px; color: var(--primary); margin-top: 4px; display: none;">目前已有一張或多張照片，上傳新照片將會覆蓋。</div>
           </div>
 
           <div>
@@ -413,13 +412,15 @@ let selectedOwnership = "internal";
 let sortField = "date";
 let sortDesc = true;
 let levelChart = null, dateChart = null, reasonChart = null;
+
 let selectedFilesArray = [];
+// 🌟 新增：用來記錄修改模式下的舊照片與準備刪除的舊照片
+let retainedOldUrls = [];
+let deletedOldUrls = [];
 
-// 🌟 新增：分頁控制變數
 let currentPage = 1;
-const itemsPerPage = 10; // 每頁顯示 10 筆
+const itemsPerPage = 10; 
 
-// 🌟 新增：燈箱控制變數
 let currentLightboxImages = [];
 let currentLightboxIndex = 0;
 
@@ -439,7 +440,7 @@ function showToast(message, type = 'success') {
 
 function setQuickReason(text) {
   document.getElementById("reason").value = text;
-  triggerDraftSave(); // 點擊快速原因後觸發草稿存檔
+  triggerDraftSave(); 
 }
 
 function updateDatalists() {
@@ -455,7 +456,6 @@ function updateDatalists() {
   document.getElementById('reporter-list').innerHTML = createOptions(reporters);
 }
 
-// 修改觸發搜尋或篩選時，頁碼重設回第一頁
 const debouncedRender = debounce(() => {
   currentPage = 1;
   render();
@@ -513,7 +513,6 @@ function resetForm() {
   document.getElementById("formCard").classList.remove("edit-mode");
   document.getElementById("formMode").classList.remove("edit-active");
   document.getElementById("photoLabel").innerText = "現場照片 (可選多張，將自動智慧壓縮上傳)";
-  document.getElementById("currentPhotoInfo").style.display = "none";
 
   document.getElementById("date").value = todayLocalString();
   document.getElementById("time").value = new Date().toTimeString().slice(0, 5);
@@ -526,13 +525,18 @@ function resetForm() {
   document.getElementById("photo").value = "";
   
   selectedFilesArray = [];
+  retainedOldUrls = [];
+  deletedOldUrls = [];
   renderFilePreviews();
+  
+  localStorage.removeItem('formDraft'); 
+  document.getElementById('draftStatus').innerText = "✅ 表單已清空，草稿已重置。";
 }
 
 function cancelEdit() { 
   if(confirm("確定要取消修改嗎？目前輸入的內容將會遺失。")) {
     resetForm();
-    loadDraft(); // 取消修改後，載回原本可能寫到一半的新增草稿
+    loadDraft(); 
   }
 }
 
@@ -575,13 +579,11 @@ function render() {
   renderTable(); analyze(); drawCharts(); updateFilterText(); updateSortIcons();
 }
 
-// 🌟 新增：處理分頁切換
 function changePage(step) {
   currentPage += step;
   renderTable();
 }
 
-// 🌟 優化：渲染表格時加入分頁邏輯與呼叫燈箱的按鈕
 function renderTable() {
   const tb = document.getElementById("tb");
   tb.innerHTML = "";
@@ -593,7 +595,6 @@ function renderTable() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
-  // 更新分頁按鈕顯示狀態
   document.getElementById('pageInfo').innerText = `${currentPage} / ${totalPages}`;
   document.getElementById('prevPageBtn').disabled = currentPage === 1;
   document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
@@ -640,7 +641,6 @@ function renderTable() {
   document.getElementById("listCount").innerText = `雲端已同步 ${filteredData.length} 筆資料`;
 }
 
-// 🌟 新增：照片燈箱處理邏輯
 function openLightbox(recordId, index) {
   const record = data.find(d => d.id === recordId);
   if (!record || !record.photoBase64) return;
@@ -652,11 +652,19 @@ function openLightbox(recordId, index) {
   document.getElementById('lightbox').style.display = 'flex';
 }
 
+// 💡 用來在預覽框裡直接顯示 Google Drive 小縮圖的魔法函式
+function getThumbnailUrl(rawUrl) {
+  let match = rawUrl.match(/[-\w]{25,}/);
+  if (match && match[0] && rawUrl.includes("drive.google.com")) {
+    return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w300`;
+  }
+  return rawUrl;
+}
+
 function updateLightboxView() {
   let rawUrl = currentLightboxImages[currentLightboxIndex];
   let directUrl = rawUrl;
   
-  // 💡 終極魔法：改用 Google 官方的 thumbnail API，這個方法最穩定，不會被瀏覽器安全機制阻擋
   let match = rawUrl.match(/[-\w]{25,}/);
   if (match && match[0] && rawUrl.includes("drive.google.com")) {
     directUrl = `https://drive.google.com/thumbnail?id=${match[0]}&sz=w1200`;
@@ -692,15 +700,13 @@ function getFormRecord() {
   };
 }
 
-// 🌟 新增：自動存草稿邏輯
 function triggerDraftSave() {
-  if (editingDataId !== null) return; // 修改模式下不存草稿
+  if (editingDataId !== null) return; 
   const draft = getFormRecord();
   localStorage.setItem('formDraft', JSON.stringify(draft));
   document.getElementById('draftStatus').innerText = "📝 草稿已於 " + new Date().toTimeString().slice(0, 5) + " 自動儲存";
 }
 
-// 監聽表單內所有輸入框的變更，觸發草稿存檔
 document.getElementById('recordForm').addEventListener('input', triggerDraftSave);
 
 function loadDraft() {
@@ -732,10 +738,35 @@ function handleFileSelect(input) {
   input.value = ""; 
 }
 
+// 🌟 升級版預覽：同時渲染「舊照片」與「新照片」
 function renderFilePreviews() {
   const container = document.getElementById("filePreviewContainer");
   container.innerHTML = "";
 
+  // 渲染保留的舊照片
+  retainedOldUrls.forEach((url, index) => {
+    const item = document.createElement("div");
+    item.className = "preview-item old-photo"; // 加上 old-photo 顯示「舊圖」字樣
+
+    const img = document.createElement("img");
+    img.src = getThumbnailUrl(url); // 轉換為縮圖顯示
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-remove-file";
+    removeBtn.innerHTML = "✕";
+    removeBtn.onclick = function() {
+      deletedOldUrls.push(retainedOldUrls[index]); // 記錄這個網址準備去雲端刪除
+      retainedOldUrls.splice(index, 1); // 畫面上移掉
+      renderFilePreviews();
+    };
+
+    item.appendChild(img);
+    item.appendChild(removeBtn);
+    container.appendChild(item);
+  });
+
+  // 渲染剛選取的新照片
   selectedFilesArray.forEach((file, index) => {
     const item = document.createElement("div");
     item.className = "preview-item";
@@ -759,6 +790,7 @@ function renderFilePreviews() {
   });
 }
 
+// 🌟 核心升級：編輯時傳送「保留舊圖」、「刪除舊圖」與「新增的圖」給後端
 async function addRecord(event) {
   event.preventDefault();
   const row = getFormRecord();
@@ -781,8 +813,6 @@ async function addRecord(event) {
         compressedArray.push(base64);
       }
       photoPayload = compressedArray;
-    } else if (editingDataId !== null) {
-      photoPayload = "KEEP_OLD";
     }
 
     let payload = {
@@ -792,9 +822,16 @@ async function addRecord(event) {
       photoBase64: photoPayload 
     };
 
+    // 如果是修改模式，加上新舊照片的資訊給後端
+    if (editingDataId !== null) {
+      payload.editModeUpdate = true;
+      payload.retainedOldUrls = retainedOldUrls.join(",");
+      payload.deletedOldUrls = deletedOldUrls.join(",");
+    }
+
     saveBtn.innerText = editingDataId !== null ? "☁️ 正在更新雲端資料..." : "☁️ 正在同步到 Google 試算表...";
 
-    await fetch(GAS_URL, {
+    const response = await fetch(GAS_URL, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
@@ -803,24 +840,14 @@ async function addRecord(event) {
 
     showToast(editingDataId !== null ? "✅ 雲端修改成功！" : "✅ 已成功寫入 Google 試算表！");
     
-    // 🌟 優化：資料成功送出後，清除草稿
     if (editingDataId === null) {
       localStorage.removeItem('formDraft');
       document.getElementById('draftStatus').innerText = "✅ 資料將自動同步至 Google 試算表，所有人皆可檢視與同步。";
     }
 
-    if (editingDataId !== null) {
-      const idx = data.findIndex(d => d.id === editingDataId);
-      if (idx !== -1) {
-        let oldUrl = data[idx].photoBase64;
-        data[idx] = { ...data[idx], ...row, photoBase64: photoPayload === "KEEP_OLD" ? oldUrl : "正在更新圖片..." };
-      }
-    } else {
-      data.push(payload);
-    }
-    
+    // 重新抓取資料確保列表是最新的照片狀態
     resetForm();
-    setTimeout(fetchCloudData, 1000); 
+    setTimeout(fetchCloudData, 1500); 
   } catch (error) {
     console.error(error);
     showToast("雲端同步失敗，請檢查網路", "error");
@@ -876,16 +903,17 @@ function editRecord(id) {
   document.getElementById("level").value = record.level || "low";
   setOwnership(record.ownership || "internal");
 
-  document.getElementById("photoLabel").innerText = "更換照片 (選填，不選將保留原照片)";
-  const infoText = document.getElementById("currentPhotoInfo");
-  if(record.photoBase64 && record.photoBase64.includes("http")) {
-    infoText.style.display = "block";
-  } else {
-    infoText.style.display = "none";
-  }
-  document.getElementById("photo").value = "";
+  document.getElementById("photoLabel").innerText = "照片管理 (可點選 ✕ 刪除舊照片，或選取新照片加入)";
   
+  // 💡 把雲端舊照片倒進陣列，顯示在預覽區塊
+  if (record.photoBase64 && record.photoBase64.includes("http")) {
+    retainedOldUrls = record.photoBase64.split(",").map(u => u.trim()).filter(Boolean);
+  } else {
+    retainedOldUrls = [];
+  }
+  deletedOldUrls = [];
   selectedFilesArray = [];
+  document.getElementById("photo").value = "";
   renderFilePreviews();
 
   document.getElementById("formTitle").innerText = "修改雲端紀錄";
@@ -992,37 +1020,25 @@ function updateThemeButton() { document.getElementById("themeBtn").innerText = d
 async function fetchCloudData() {
   try {
     const response = await fetch(GAS_URL);
-    
-    // 檢查回應狀態碼，若不是 200 OK，主動拋出錯誤
-    if (!response.ok) {
-      throw new Error(`伺服器拒絕連線 (狀態碼: ${response.status})`);
-    }
-
+    if (!response.ok) throw new Error(`伺服器拒絕連線 (狀態碼: ${response.status})`);
     const cloudData = await response.json();
     data = cloudData;
     updateDatalists();
     render();
     document.getElementById("listCount").innerText = `雲端已同步 ${filteredData.length} 筆資料`;
-    
   } catch (error) {
     console.error("詳細錯誤資訊：", error);
-    
-    // 將真實的錯誤原因 (error.message) 直接顯示在表格中央
     document.getElementById("tb").innerHTML = `
-      <tr>
-        <td colspan="9" class="empty" style="color: var(--danger);">
-          ❌ 讀取雲端資料失敗！<br><br>
-          系統偵測到的具體原因為：<b>${error.message}</b><br>
-          (如果顯示 Failed to fetch，通常代表被公司防火牆阻擋、CORS 限制或擴充功能攔截)
-        </td>
-      </tr>
-    `;
+      <tr><td colspan="9" class="empty" style="color: var(--danger);">
+      ❌ 讀取雲端資料失敗！<br><br>系統偵測到的具體原因為：<b>${error.message}</b><br>
+      (如果顯示 Failed to fetch，通常代表被公司防火牆阻擋、CORS 限制或擴充功能攔截)
+      </td></tr>`;
   }
 }
 
 function init() {
   resetForm(); 
-  loadDraft(); // 🌟 啟動時自動載入草稿
+  loadDraft(); 
   if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark"); 
   updateThemeButton(); 
   fetchCloudData();
