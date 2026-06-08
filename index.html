@@ -209,8 +209,7 @@ body.dark .badge.low { color: #bbf7d0; }
   th { background: #f0f0f0 !important; color: black !important; }
   .charts { break-inside: avoid; }
 }
-</svg>
-</head>
+</style> </head>
 
 <body>
 <div class="app-shell">
@@ -404,7 +403,7 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbzCBwPxtZ7cTSpvumnIrQ0h
 const API_TOKEN = "evt_2026_R8xLq2vP91mZaT7kQw4NfH6sYbCdE3uA"; 
 
 const MAX_PHOTO_COUNT = 5;
-const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
+const MAX_FILE_SIZE = 8 * 1024 * 1024; 
 
 let data = [];
 let filteredData = [];
@@ -425,10 +424,8 @@ const itemsPerPage = 10;
 let currentLightboxImages = [];
 let currentLightboxIndex = 0;
 
-// 💡 修正 8：新增防重複連點刪除的全域變數
 let isDeleting = false;
 
-// 💡 修正 5：強健化前端陣列處理器
 function normalizePhotoUrls(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -502,7 +499,6 @@ function formatCloudTime(timeStr) {
   return String(timeStr);
 }
 
-// 💡 修正 7：調整錯誤頁面的 listCount
 function updateErrorListCount(text) {
   const el = document.getElementById("listCount");
   if(el) el.innerText = text;
@@ -878,7 +874,6 @@ async function addRecord(event) {
         saveBtn.innerText = `⚡ 正在壓縮圖片中 (${i + 1}/${selectedFilesArray.length})...`;
         const base64 = await compressImage(selectedFilesArray[i], 1200, 0.7);
         
-        // 💡 修正 3：前端預先攔截過大的壓縮 Base64 字串
         if (base64.length > 4 * 1024 * 1024) {
           throw new Error(`第 ${i + 1} 張圖片壓縮後仍過大，請改用較小圖片或減少照片`);
         }
@@ -920,7 +915,6 @@ async function addRecord(event) {
     showToast(`同步失敗: ${error.message || "請檢查網路"}`, "error");
   } finally {
     saveBtn.disabled = false;
-    // 💡 修正 7：儲存失敗或結束後，按鈕文字依狀態恢復
     saveBtn.innerText = editingDataId !== null ? "儲存修改至雲端" : "新增同步至雲端";
   }
 }
@@ -991,7 +985,6 @@ function editRecord(id) {
 }
 
 async function deleteRecord(id) {
-  // 💡 修正 8：防止瘋狂點擊重複刪除
   if (isDeleting) return;
 
   const record = data.find(d => d.id === id);
@@ -1073,7 +1066,7 @@ function drawCharts() {
 function filterMonth() { currentFilter = "month"; currentPage = 1; render(); }
 function clearFilter() { currentFilter = "all"; document.getElementById("search").value = ""; currentPage = 1; render(); }
 function updateFilterText() { const text = currentFilter === "month" ? `本月` : "全部"; document.getElementById("filterStatus").innerText = `目前篩選：${text}`; }
-function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
+function csvCell(value) { return `"/""${String(value ?? "").replaceAll('"', '""')}"`; }
 
 function exportCSV() {
   if (filteredData.length === 0) { alert("目前沒有資料可以匯出喔！"); return; }
@@ -1105,7 +1098,6 @@ async function fetchCloudData() {
 
   } catch (error) {
     console.error("詳細錯誤資訊：", error);
-    // 💡 修正 7：當資料讀取失敗時，同時更新 listCount 狀態
     updateErrorListCount("讀取失敗");
     document.getElementById("tb").innerHTML = `
       <tr><td colspan="9" class="empty" style="color: var(--danger);">
