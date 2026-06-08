@@ -645,6 +645,7 @@ function resetForm(options = { clearDraft: true }) {
   document.getElementById("photoLabel").innerText = "現場照片 (可選多張，將自動智慧壓縮上傳)";
 
   document.getElementById("date").value = todayLocalString();
+  document.getElementById("date").max = todayLocalString();
   document.getElementById("time").value = new Date().toTimeString().slice(0, 5);
   document.getElementById("event").value = "";
   document.getElementById("reason").value = "";
@@ -974,6 +975,19 @@ async function addRecord(event) {
   const row = getFormRecord();
   if (!row.event || !row.reason || !row.related || !row.reporter) {
     showToast("⚠️ 必填欄位不能只有空白，請確實填寫喔！", "error");
+    return;
+  }
+  // 💡 新增：時空旅人防堵驗證
+  const now = new Date();
+  const todayStr = todayLocalString();
+  const currentTimeStr = now.toTimeString().slice(0, 5); // 取得目前 hh:mm
+
+  if (row.date > todayStr) {
+    showToast("⚠️ 發生日期不能選擇未來的日期喔！", "error");
+    return;
+  }
+  if (row.date === todayStr && row.time && row.time > currentTimeStr) {
+    showToast("⚠️ 發生時間不能比現在時間還晚喔！", "error");
     return;
   }
   const saveBtn = document.getElementById("saveBtn");
