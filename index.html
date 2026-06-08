@@ -656,10 +656,10 @@ function updateLightboxView() {
   let rawUrl = currentLightboxImages[currentLightboxIndex];
   let directUrl = rawUrl;
   
-  // 💡 魔法轉換：自動抓取 Google Drive 網址內的檔案 ID，並轉換成圖片直連網址
+  // 💡 終極魔法：改用 Google 官方的 thumbnail API，這個方法最穩定，不會被瀏覽器安全機制阻擋
   let match = rawUrl.match(/[-\w]{25,}/);
   if (match && match[0] && rawUrl.includes("drive.google.com")) {
-    directUrl = `https://drive.google.com/uc?export=view&id=${match[0]}`;
+    directUrl = `https://drive.google.com/thumbnail?id=${match[0]}&sz=w1200`;
   }
   
   document.getElementById('lightboxImg').src = directUrl;
