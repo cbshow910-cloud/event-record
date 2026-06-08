@@ -291,8 +291,8 @@ body.dark .badge.low { color: #bbf7d0; }
             <label>問題歸屬</label>
             <input type="hidden" id="ownership" value="internal">
             <div class="ownership-options" role="group">
-              <button class="ownership-btn active" id="ownerInternalBtn" onclick="setOwnership('internal')" type="button">內部</button>
-              <button class="ownership-btn external" id="ownerExternalBtn" onclick="setOwnership('external')" type="button">外部</button>
+              <button class="ownership-btn active" id="ownerInternalBtn" onclick="setOwnership('internal', { saveDraft: true })" type="button">內部</button>
+              <button class="ownership-btn external" id="ownerExternalBtn" onclick="setOwnership('external', { saveDraft: true })" type="button">外部</button>
             </div>
           </div>
 
@@ -402,9 +402,11 @@ body.dark .badge.low { color: #bbf7d0; }
 <script>
 // ⚠️ 記得確保此網址為你最新的 Apps Script 部署網址
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzCBwPxtZ7cTSpvumnIrQ0hz6tiA40NgfexWzV6QWgi8e8lLjpiBlb9VGgDnUffO9wx/exec";
-
-// 💡 對應後端的新 Token
 const API_TOKEN = "my-secret-token-12345"; 
+
+// 💡 新增：圖片上限與大小常數
+const MAX_PHOTO_COUNT = 5;
+const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
 
 let data = [];
 let filteredData = [];
@@ -497,15 +499,18 @@ function ownershipText(ownership) { return ownership === "external" ? "外部" :
 function ownershipClass(ownership) { return ownership === "external" ? "owner-external" : "owner-internal"; }
 function makeRecordId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
-function setOwnership(value) {
+// 💡 修正 7：設定 ownership 時可以選擇不要觸發草稿，防覆蓋
+function setOwnership(value, options = { saveDraft: true }) {
   selectedOwnership = value === "external" ? "external" : "internal";
   document.getElementById("ownership").value = selectedOwnership;
   document.getElementById("ownerInternalBtn").classList.toggle("active", selectedOwnership === "internal");
   document.getElementById("ownerExternalBtn").classList.toggle("active", selectedOwnership === "external");
-  triggerDraftSave();
+  
+  if (options.saveDraft) {
+    triggerDraftSave();
+  }
 }
 
-// 💡 修正 2：加入 clearDraft 選項，修復草稿邏輯衝突
 function resetForm(options = { clearDraft: true }) {
   editingDataId = null;
   document.getElementById("formTitle").innerText = "新增紀錄";
@@ -523,7 +528,9 @@ function resetForm(options = { clearDraft: true }) {
   document.getElementById("related").value = "";
   document.getElementById("reporter").value = "";
   document.getElementById("level").value = "low";
-  setOwnership("internal");
+  
+  // 💡 確保重置表單時不覆蓋現有草稿
+  setOwnership("internal", { saveDraft: false });
   document.getElementById("photo").value = "";
   
   selectedFilesArray = [];
@@ -588,16 +595,18 @@ function changePage(step) {
   renderTable();
 }
 
-// 💡 修正 3：相容後端回傳的 JSON 字串陣列格式
-function parsePhotoUrls(value) {
-  if (!value) return [];
-  if (Array.isArray(value)) return value.filter(Boolean);
-  try {
-    const parsed = JSON.parse(String(value));
-    if (Array.isArray(parsed)) return parsed.filter(Boolean);
-  } catch (error) {}
-  return String(value).split(",").map(function(url) { return url.trim(); }).filter(Boolean);
-}
+// 💡 修正 8：綁定事件委派，不直接在 HTML 寫 onclick 執行函式
+document.getElementById("tb").addEventListener("click", function(e) {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+
+  if (action === "edit") editRecord(id);
+  if (action === "delete") deleteRecord(id);
+  if (action === "photo") openLightbox(id, Number(btn.dataset.index || 0));
+});
 
 function renderTable() {
   const tb = document.getElementById("tb");
@@ -623,10 +632,11 @@ function renderTable() {
     tb.innerHTML = paginatedData.map(r => {
       let photoContent = '<span style="color:var(--muted)">無</span>';
       
-      const urls = parsePhotoUrls(r.photoUrls);
+      const urls = r.photoUrls || [];
       if (urls.length > 0) {
+        // 💡 使用 data-* 屬性將按鈕與動作綁定
         photoContent = `<div class="table-photo-container">` + 
-          urls.map((url, index) => `<button type="button" class="badge owner-internal" onclick="openLightbox('${r.id}', ${index})" style="border:none; cursor:pointer;">📷 照片 ${index + 1}</button>`).join("") + 
+          urls.map((url, index) => `<button type="button" class="badge owner-internal" data-action="photo" data-id="${escapeHTML(r.id)}" data-index="${index}" style="border:none; cursor:pointer;">📷 照片 ${index + 1}</button>`).join("") + 
           `</div>`;
       }
 
@@ -647,8 +657,8 @@ function renderTable() {
         <td><span class="badge ${ownershipClass(r.ownership)}">${ownershipText(r.ownership)}</span></td>
         <td><span class="badge ${escapeHTML(r.level)}">${levelText(r.level)}</span></td>
         <td class="action-cell">
-          <button class="btn-edit" onclick="editRecord('${r.id}')" type="button">修改</button>
-          <button class="btn-delete" onclick="deleteRecord('${r.id}')" type="button">刪除</button>
+          <button class="btn-edit" data-action="edit" data-id="${escapeHTML(r.id)}" type="button">修改</button>
+          <button class="btn-delete" data-action="delete" data-id="${escapeHTML(r.id)}" type="button">刪除</button>
         </td>
       </tr>
       `
@@ -659,11 +669,9 @@ function renderTable() {
 
 function openLightbox(recordId, index) {
   const record = data.find(d => d.id === recordId);
-  if (!record || !record.photoUrls) return;
+  if (!record || !record.photoUrls || record.photoUrls.length === 0) return;
   
-  currentLightboxImages = parsePhotoUrls(record.photoUrls);
-  if(currentLightboxImages.length === 0) return;
-
+  currentLightboxImages = record.photoUrls;
   currentLightboxIndex = index;
   updateLightboxView();
   
@@ -738,19 +746,37 @@ function loadDraft() {
       if(draft.related) document.getElementById("related").value = draft.related;
       if(draft.reporter) document.getElementById("reporter").value = draft.reporter;
       if(draft.level) document.getElementById("level").value = draft.level;
-      if(draft.ownership) setOwnership(draft.ownership);
+      if(draft.ownership) setOwnership(draft.ownership, { saveDraft: false });
       document.getElementById('draftStatus').innerText = "📝 已為您載入上次未完成的草稿";
     } catch(e){}
   }
 }
 
+// 💡 修正：前置驗證圖片張數與大小
 function handleFileSelect(input) {
   const files = Array.from(input.files);
-  files.forEach(file => {
+
+  for (const file of files) {
+    if (!file.type.startsWith("image/")) {
+      showToast(`「${file.name}」不是圖片檔`, "error");
+      continue;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(`「${file.name}」檔案過大 (請小於 8MB)`, "error");
+      continue;
+    }
+
+    if (selectedFilesArray.length + retainedOldUrls.length >= MAX_PHOTO_COUNT) {
+      showToast(`照片總數最多只能保留 ${MAX_PHOTO_COUNT} 張`, "error");
+      break;
+    }
+
     if (!selectedFilesArray.some(f => f.name === file.name && f.size === file.size)) {
       selectedFilesArray.push(file);
     }
-  });
+  }
+
   renderFilePreviews();
   input.value = ""; 
 }
@@ -841,7 +867,6 @@ async function addRecord(event) {
       photoPayload = compressedArray;
     }
 
-    // 💡 修正 4：對應後端新的變數名稱與 Token 驗證
     let payload = {
       ...row,
       token: API_TOKEN,
@@ -857,7 +882,7 @@ async function addRecord(event) {
 
     saveBtn.innerText = editingDataId !== null ? "☁️ 正在更新雲端資料..." : "☁️ 正在同步到 Google 試算表...";
 
-    // 💡 修正 5：拔除 no-cors，改為真正檢查 JSON 回傳狀態
+    // POST 不帶 URL Params，只依賴 payload 內的 token (我們目前的 text/plain 設計)
     const response = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -865,9 +890,7 @@ async function addRecord(event) {
     });
     
     const result = await response.json();
-    if (!result.success) {
-      throw new Error(result.message || "雲端寫入失敗");
-    }
+    if (!result.success) throw new Error(result.message || "雲端寫入失敗");
 
     showToast(editingDataId !== null ? "✅ 雲端修改成功！" : "✅ 已成功寫入 Google 試算表！");
     
@@ -926,11 +949,11 @@ function editRecord(id) {
   document.getElementById("related").value = record.related || "";
   document.getElementById("reporter").value = record.reporter || "";
   document.getElementById("level").value = record.level || "low";
-  setOwnership(record.ownership || "internal");
+  setOwnership(record.ownership || "internal", { saveDraft: false });
 
   document.getElementById("photoLabel").innerText = "照片管理 (可點選 ✕ 刪除舊照片，或選取新照片加入)";
   
-  retainedOldUrls = parsePhotoUrls(record.photoUrls);
+  retainedOldUrls = record.photoUrls || [];
   deletedOldUrls = [];
   selectedFilesArray = [];
   document.getElementById("photo").value = "";
@@ -955,7 +978,6 @@ async function deleteRecord(id) {
 
   showToast("⏳ 正在從雲端移除資料...", "error");
   try {
-    // 💡 修正 6：同步拔除 no-cors 並檢查 JSON 回傳
     const response = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -963,9 +985,7 @@ async function deleteRecord(id) {
     });
     
     const result = await response.json();
-    if (!result.success) {
-      throw new Error(result.message || "刪除失敗");
-    }
+    if (!result.success) throw new Error(result.message || "刪除失敗");
 
     showToast("🗑️ 雲端紀錄已成功刪除");
     data = data.filter(d => d.id !== id);
@@ -1032,7 +1052,7 @@ function exportCSV() {
   if (filteredData.length === 0) { alert("目前沒有資料可以匯出喔！"); return; }
   let csv = "\uFEFF日期,時間,照片狀態,事件,原因,相關人員,填寫人員,問題歸屬,嚴重程度\n";
   filteredData.forEach(r => { 
-    const urls = parsePhotoUrls(r.photoUrls);
+    const urls = r.photoUrls || [];
     const photoStatus = urls.length > 0 ? "[有附照片]" : "[無照片]";
     csv += [
       csvCell(formatCloudDate(r.date)), csvCell(formatCloudTime(r.time)), csvCell(photoStatus), csvCell(r.event), csvCell(r.reason), csvCell(r.related), csvCell(r.reporter), csvCell(ownershipText(r.ownership)), csvCell(levelText(r.level))
@@ -1044,16 +1064,14 @@ function exportCSV() {
 function toggleTheme() { document.body.classList.toggle("dark"); localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light"); updateThemeButton(); drawCharts(); }
 function updateThemeButton() { document.getElementById("themeBtn").innerText = document.body.classList.contains("dark") ? "淺色模式" : "深色模式"; }
 
-// 💡 修正 7：相容後端新的 JSON 資料格式 { success, data }
+// 💡 修正 6：fetchCloudData 加入 Token (這能破解剛剛修改後端導致的讀取阻擋)
 async function fetchCloudData() {
   try {
-    const response = await fetch(GAS_URL);
+    const response = await fetch(`${GAS_URL}?token=${encodeURIComponent(API_TOKEN)}`);
     if (!response.ok) throw new Error(`伺服器拒絕連線：${response.status}`);
 
     const result = await response.json();
-    if (!result.success) {
-      throw new Error(result.message || "讀取失敗");
-    }
+    if (!result.success) throw new Error(result.message || "讀取失敗");
 
     data = result.data || [];
     updateDatalists();
@@ -1061,11 +1079,12 @@ async function fetchCloudData() {
 
   } catch (error) {
     console.error("詳細錯誤資訊：", error);
+    document.getElementById("listCount").innerText = "讀取失敗";
     document.getElementById("tb").innerHTML = `
       <tr><td colspan="9" class="empty" style="color: var(--danger);">
       ❌ 讀取雲端資料失敗！<br><br>
       原因：<b>${escapeHTML(error.message)}</b><br>
-      (如果顯示 Failed to fetch，通常代表被公司防火牆阻擋或 CORS 限制)
+      (如果顯示 Failed to fetch，代表已被安全政策阻擋或 Token 錯誤)
       </td></tr>`;
   }
 }
