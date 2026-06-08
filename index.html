@@ -1259,9 +1259,20 @@ async function fetchCloudData() {
   }
 }
 
+// 💡 新增：每分鐘自動校正日期上限的輔助函式
+function updateDateLimit() {
+  const dateInput = document.getElementById("date");
+  if (dateInput) dateInput.max = todayLocalString();
+}
+
 function init() {
   resetForm({ clearDraft: false }); 
   loadDraft(); 
+  
+  // 💡 修正：啟動時設定上限，並每 60 秒自動背景刷新一次
+  updateDateLimit();
+  setInterval(updateDateLimit, 60 * 1000);
+  
   if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark"); 
   updateThemeButton(); 
   fetchCloudData();
