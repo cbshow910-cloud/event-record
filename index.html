@@ -209,7 +209,7 @@ body.dark .badge.low { color: #bbf7d0; }
   th { background: #f0f0f0 !important; color: black !important; }
   .charts { break-inside: avoid; }
 }
-</style>
+</svg>
 </head>
 
 <body>
@@ -400,10 +400,7 @@ body.dark .badge.low { color: #bbf7d0; }
 <div id="toastContainer" class="toast-container"></div>
 
 <script>
-// ⚠️ 記得確保此網址為你最新的 Apps Script 部署網址
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzCBwPxtZ7cTSpvumnIrQ0hz6tiA40NgfexWzV6QWgi8e8lLjpiBlb9VGgDnUffO9wx/exec";
-
-// 💡 修正 1：換上高強度 Token
 const API_TOKEN = "evt_2026_R8xLq2vP91mZaT7kQw4NfH6sYbCdE3uA"; 
 
 const MAX_PHOTO_COUNT = 5;
@@ -428,7 +425,10 @@ const itemsPerPage = 10;
 let currentLightboxImages = [];
 let currentLightboxIndex = 0;
 
-// 💡 修正 2：加入通用的圖片 URL 標準化處理器
+// 💡 修正 8：新增防重複連點刪除的全域變數
+let isDeleting = false;
+
+// 💡 修正 5：強健化前端陣列處理器
 function normalizePhotoUrls(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -500,6 +500,12 @@ function formatCloudTime(timeStr) {
   }
   if (String(timeStr).includes(":")) return String(timeStr).slice(0, 5);
   return String(timeStr);
+}
+
+// 💡 修正 7：調整錯誤頁面的 listCount
+function updateErrorListCount(text) {
+  const el = document.getElementById("listCount");
+  if(el) el.innerText = text;
 }
 
 function escapeHTML(value) {
@@ -872,7 +878,7 @@ async function addRecord(event) {
         saveBtn.innerText = `⚡ 正在壓縮圖片中 (${i + 1}/${selectedFilesArray.length})...`;
         const base64 = await compressImage(selectedFilesArray[i], 1200, 0.7);
         
-        // 💡 修正 3：前端確保壓縮後的 base64 不要塞爆後端
+        // 💡 修正 3：前端預先攔截過大的壓縮 Base64 字串
         if (base64.length > 4 * 1024 * 1024) {
           throw new Error(`第 ${i + 1} 張圖片壓縮後仍過大，請改用較小圖片或減少照片`);
         }
@@ -914,7 +920,8 @@ async function addRecord(event) {
     showToast(`同步失敗: ${error.message || "請檢查網路"}`, "error");
   } finally {
     saveBtn.disabled = false;
-    saveBtn.innerText = "新增同步至雲端";
+    // 💡 修正 7：儲存失敗或結束後，按鈕文字依狀態恢復
+    saveBtn.innerText = editingDataId !== null ? "儲存修改至雲端" : "新增同步至雲端";
   }
 }
 
@@ -984,13 +991,18 @@ function editRecord(id) {
 }
 
 async function deleteRecord(id) {
+  // 💡 修正 8：防止瘋狂點擊重複刪除
+  if (isDeleting) return;
+
   const record = data.find(d => d.id === id);
   if (!record) return;
   const label = record.event ? `「${record.event}」` : "這筆紀錄";
   if (!confirm(`⚠️ 確定要從雲端刪除 ${label} 嗎？此動作將會直接刪除 Google 試算表內的那行資料，無法復原！`)) return;
 
-  showToast("⏳ 正在從雲端移除資料...", "error");
+  isDeleting = true;
+
   try {
+    showToast("⏳ 正在從雲端移除資料...", "error");
     const response = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -1008,6 +1020,8 @@ async function deleteRecord(id) {
   } catch (error) {
     console.error(error);
     showToast(`刪除失敗: ${error.message}`, "error");
+  } finally {
+    isDeleting = false;
   }
 }
 
@@ -1091,7 +1105,8 @@ async function fetchCloudData() {
 
   } catch (error) {
     console.error("詳細錯誤資訊：", error);
-    document.getElementById("listCount").innerText = "讀取失敗";
+    // 💡 修正 7：當資料讀取失敗時，同時更新 listCount 狀態
+    updateErrorListCount("讀取失敗");
     document.getElementById("tb").innerHTML = `
       <tr><td colspan="9" class="empty" style="color: var(--danger);">
       ❌ 讀取雲端資料失敗！<br><br>
