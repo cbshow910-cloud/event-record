@@ -402,9 +402,10 @@ body.dark .badge.low { color: #bbf7d0; }
 <script>
 // ⚠️ 記得確保此網址為你最新的 Apps Script 部署網址
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzCBwPxtZ7cTSpvumnIrQ0hz6tiA40NgfexWzV6QWgi8e8lLjpiBlb9VGgDnUffO9wx/exec";
-const API_TOKEN = "my-secret-token-12345"; 
 
-// 💡 新增：圖片上限與大小常數
+// 💡 修正 1：換上高強度 Token
+const API_TOKEN = "evt_2026_R8xLq2vP91mZaT7kQw4NfH6sYbCdE3uA"; 
+
 const MAX_PHOTO_COUNT = 5;
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
 
@@ -426,6 +427,17 @@ const itemsPerPage = 10;
 
 let currentLightboxImages = [];
 let currentLightboxIndex = 0;
+
+// 💡 修正 2：加入通用的圖片 URL 標準化處理器
+function normalizePhotoUrls(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  try {
+    const parsed = JSON.parse(String(value));
+    if (Array.isArray(parsed)) return parsed.filter(Boolean);
+  } catch (e) {}
+  return String(value).split(",").map(url => url.trim()).filter(Boolean);
+}
 
 function debounce(func, delay) {
   let timer;
@@ -499,7 +511,6 @@ function ownershipText(ownership) { return ownership === "external" ? "外部" :
 function ownershipClass(ownership) { return ownership === "external" ? "owner-external" : "owner-internal"; }
 function makeRecordId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
-// 💡 修正 7：設定 ownership 時可以選擇不要觸發草稿，防覆蓋
 function setOwnership(value, options = { saveDraft: true }) {
   selectedOwnership = value === "external" ? "external" : "internal";
   document.getElementById("ownership").value = selectedOwnership;
@@ -529,7 +540,6 @@ function resetForm(options = { clearDraft: true }) {
   document.getElementById("reporter").value = "";
   document.getElementById("level").value = "low";
   
-  // 💡 確保重置表單時不覆蓋現有草稿
   setOwnership("internal", { saveDraft: false });
   document.getElementById("photo").value = "";
   
@@ -595,7 +605,6 @@ function changePage(step) {
   renderTable();
 }
 
-// 💡 修正 8：綁定事件委派，不直接在 HTML 寫 onclick 執行函式
 document.getElementById("tb").addEventListener("click", function(e) {
   const btn = e.target.closest("button[data-action]");
   if (!btn) return;
@@ -632,9 +641,8 @@ function renderTable() {
     tb.innerHTML = paginatedData.map(r => {
       let photoContent = '<span style="color:var(--muted)">無</span>';
       
-      const urls = r.photoUrls || [];
+      const urls = normalizePhotoUrls(r.photoUrls);
       if (urls.length > 0) {
-        // 💡 使用 data-* 屬性將按鈕與動作綁定
         photoContent = `<div class="table-photo-container">` + 
           urls.map((url, index) => `<button type="button" class="badge owner-internal" data-action="photo" data-id="${escapeHTML(r.id)}" data-index="${index}" style="border:none; cursor:pointer;">📷 照片 ${index + 1}</button>`).join("") + 
           `</div>`;
@@ -669,9 +677,11 @@ function renderTable() {
 
 function openLightbox(recordId, index) {
   const record = data.find(d => d.id === recordId);
-  if (!record || !record.photoUrls || record.photoUrls.length === 0) return;
+  const urls = normalizePhotoUrls(record ? record.photoUrls : null);
   
-  currentLightboxImages = record.photoUrls;
+  if (urls.length === 0) return;
+  
+  currentLightboxImages = urls;
   currentLightboxIndex = index;
   updateLightboxView();
   
@@ -752,7 +762,6 @@ function loadDraft() {
   }
 }
 
-// 💡 修正：前置驗證圖片張數與大小
 function handleFileSelect(input) {
   const files = Array.from(input.files);
 
@@ -862,6 +871,11 @@ async function addRecord(event) {
       for (let i = 0; i < selectedFilesArray.length; i++) {
         saveBtn.innerText = `⚡ 正在壓縮圖片中 (${i + 1}/${selectedFilesArray.length})...`;
         const base64 = await compressImage(selectedFilesArray[i], 1200, 0.7);
+        
+        // 💡 修正 3：前端確保壓縮後的 base64 不要塞爆後端
+        if (base64.length > 4 * 1024 * 1024) {
+          throw new Error(`第 ${i + 1} 張圖片壓縮後仍過大，請改用較小圖片或減少照片`);
+        }
         compressedArray.push(base64);
       }
       photoPayload = compressedArray;
@@ -882,7 +896,6 @@ async function addRecord(event) {
 
     saveBtn.innerText = editingDataId !== null ? "☁️ 正在更新雲端資料..." : "☁️ 正在同步到 Google 試算表...";
 
-    // POST 不帶 URL Params，只依賴 payload 內的 token (我們目前的 text/plain 設計)
     const response = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -953,7 +966,7 @@ function editRecord(id) {
 
   document.getElementById("photoLabel").innerText = "照片管理 (可點選 ✕ 刪除舊照片，或選取新照片加入)";
   
-  retainedOldUrls = record.photoUrls || [];
+  retainedOldUrls = normalizePhotoUrls(record.photoUrls);
   deletedOldUrls = [];
   selectedFilesArray = [];
   document.getElementById("photo").value = "";
@@ -1052,7 +1065,7 @@ function exportCSV() {
   if (filteredData.length === 0) { alert("目前沒有資料可以匯出喔！"); return; }
   let csv = "\uFEFF日期,時間,照片狀態,事件,原因,相關人員,填寫人員,問題歸屬,嚴重程度\n";
   filteredData.forEach(r => { 
-    const urls = r.photoUrls || [];
+    const urls = normalizePhotoUrls(r.photoUrls);
     const photoStatus = urls.length > 0 ? "[有附照片]" : "[無照片]";
     csv += [
       csvCell(formatCloudDate(r.date)), csvCell(formatCloudTime(r.time)), csvCell(photoStatus), csvCell(r.event), csvCell(r.reason), csvCell(r.related), csvCell(r.reporter), csvCell(ownershipText(r.ownership)), csvCell(levelText(r.level))
@@ -1064,7 +1077,6 @@ function exportCSV() {
 function toggleTheme() { document.body.classList.toggle("dark"); localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light"); updateThemeButton(); drawCharts(); }
 function updateThemeButton() { document.getElementById("themeBtn").innerText = document.body.classList.contains("dark") ? "淺色模式" : "深色模式"; }
 
-// 💡 修正 6：fetchCloudData 加入 Token (這能破解剛剛修改後端導致的讀取阻擋)
 async function fetchCloudData() {
   try {
     const response = await fetch(`${GAS_URL}?token=${encodeURIComponent(API_TOKEN)}`);
