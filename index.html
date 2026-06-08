@@ -114,6 +114,13 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 button[hidden] { display: none; }
 .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
 
+/* 🌟 新增：圖片預覽區塊樣式 */
+.preview-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.preview-item { position: relative; width: 70px; height: 70px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: #eee; }
+.preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.preview-item .btn-remove-file { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: var(--danger); color: white; border: none; border-radius: 50%; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; min-height: auto; }
+.preview-item .btn-remove-file:hover { filter: brightness(1.2); }
+
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
 .stat-box { background: var(--surface-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; min-width: 0; }
 .stat-label { font-size: 13px; color: var(--muted); font-weight: 700; }
@@ -155,6 +162,9 @@ body.dark .badge.medium { color: #fde68a; }
 body.dark .badge.low { color: #bbf7d0; }
 .badge.owner-internal { background: var(--primary-soft); color: var(--primary-strong); }
 .badge.owner-external { background: var(--warning-soft); color: #92400e; }
+
+/* 🌟 新增：表格內多個照片連結的容器 */
+.table-photo-container { display: flex; flex-direction: column; gap: 4px; }
 
 .status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 999px; background: var(--surface-muted); border: 1px solid var(--border); color: var(--muted); font-size: 13px; font-weight: 700; transition: all 0.2s ease; }
 .status-pill.edit-active { color: var(--danger); font-weight: 900; background: var(--danger-soft); border-color: var(--danger); }
@@ -241,9 +251,12 @@ body.dark .badge.low { color: #bbf7d0; }
           </div>
 
           <div class="full">
-            <label for="photo" id="photoLabel" style="color: var(--primary);">現場照片 (選填，大圖將由系統自動智慧壓縮上傳)</label>
-            <input type="file" id="photo" accept="image/*">
-            <div id="currentPhotoInfo" style="font-size: 12px; color: var(--primary); margin-top: 4px; display: none;">目前已有一張照片，上傳新照片將會覆蓋。</div>
+            <label for="photo" id="photoLabel" style="color: var(--primary);">現場照片 (可選多張，將自動智慧壓縮上傳)</label>
+            <input type="file" id="photo" accept="image/*" multiple onchange="handleFileSelect(this)">
+            
+            <div id="filePreviewContainer" class="preview-container"></div>
+            
+            <div id="currentPhotoInfo" style="font-size: 12px; color: var(--primary); margin-top: 4px; display: none;">目前已有一張或多張照片，上傳新照片將會覆蓋。</div>
           </div>
 
           <div>
@@ -373,6 +386,9 @@ let sortField = "date";
 let sortDesc = true;
 let levelChart = null, dateChart = null, reasonChart = null;
 
+// 🌟 新增：全域陣列，用來暫存使用者目前選取並準備上傳的圖片檔案物件
+let selectedFilesArray = [];
+
 function debounce(func, delay) {
   let timer;
   return function (...args) { clearTimeout(timer); timer = setTimeout(() => func.apply(this, args), delay); };
@@ -460,7 +476,7 @@ function resetForm() {
   document.getElementById("cancelEditBtn").hidden = true;
   document.getElementById("formCard").classList.remove("edit-mode");
   document.getElementById("formMode").classList.remove("edit-active");
-  document.getElementById("photoLabel").innerText = "現場照片 (選填，大圖將由系統自動智慧壓縮上傳)";
+  document.getElementById("photoLabel").innerText = "現場照片 (可選多張，將自動智慧壓縮上傳)";
   document.getElementById("currentPhotoInfo").style.display = "none";
 
   document.getElementById("date").value = todayLocalString();
@@ -472,6 +488,10 @@ function resetForm() {
   document.getElementById("level").value = "low";
   setOwnership("internal");
   document.getElementById("photo").value = "";
+  
+  // 🌟 新增：重設表單時清空檔案快取與預覽畫面
+  selectedFilesArray = [];
+  renderFilePreviews();
 }
 
 function cancelEdit() { if(confirm("確定要取消修改嗎？目前輸入的內容將會遺失。")) resetForm(); }
@@ -523,9 +543,13 @@ function renderTable() {
     tb.innerHTML = `<tr><td colspan="9" class="empty">${emptyMsg}</td></tr>`;
   } else {
     tb.innerHTML = filteredData.map(r => {
+      // 🌟 調整：相容逗號隔開的多網頁格式
       let photoContent = '<span style="color:var(--muted)">無</span>';
       if (r.photoBase64 && r.photoBase64.includes("http")) {
-        photoContent = `<a href="${r.photoBase64}" target="_blank" class="badge owner-internal" style="text-decoration:none;">查看雲端照片</a>`;
+        const urls = r.photoBase64.split(",");
+        photoContent = `<div class="table-photo-container">` + 
+          urls.map((url, index) => `<a href="${url.trim()}" target="_blank" class="badge owner-internal" style="text-decoration:none;">照片 ${index + 1}</a>`).join("") + 
+          `</div>`;
       }
 
       let cleanDate = formatCloudDate(r.date);
@@ -568,7 +592,49 @@ function getFormRecord() {
   };
 }
 
-// 🛠️ 核心修改：已更新為前端智慧壓縮邏輯
+// 🌟 新增：處理選取多檔案，並產生預覽圖與刪除按鈕
+function handleFileSelect(input) {
+  const files = Array.from(input.files);
+  files.forEach(file => {
+    // 避免重複加入同一個檔案
+    if (!selectedFilesArray.some(f => f.name === file.name && f.size === file.size)) {
+      selectedFilesArray.push(file);
+    }
+  });
+  renderFilePreviews();
+  input.value = ""; // 清空 input 讓同一個檔案能重複觸發 change 事件
+}
+
+// 🌟 新增：重新渲染圖片預覽區
+function renderFilePreviews() {
+  const container = document.getElementById("filePreviewContainer");
+  container.innerHTML = "";
+
+  selectedFilesArray.forEach((file, index) => {
+    const item = document.createElement("div");
+    item.className = "preview-item";
+
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file); // 建立暫時網址供預覽
+    img.onload = function() { URL.revokeObjectURL(this.src); }; // 釋放記憶體
+
+    // ❌ 這是你要求的個別刪除檔案 Button
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-remove-file";
+    removeBtn.innerHTML = "✕";
+    removeBtn.onclick = function() {
+      selectedFilesArray.splice(index, 1); // 從快取陣列中移除
+      renderFilePreviews(); // 重新渲染
+    };
+
+    item.appendChild(img);
+    item.appendChild(removeBtn);
+    container.appendChild(item);
+  });
+}
+
+// 🌟 調整：支援多檔案依序智慧壓縮，並打包成陣列上傳
 async function addRecord(event) {
   event.preventDefault();
   const row = getFormRecord();
@@ -580,13 +646,19 @@ async function addRecord(event) {
   saveBtn.disabled = true;
 
   try {
-    const photoInput = document.getElementById("photo");
     let photoPayload = null;
 
-    if (photoInput.files && photoInput.files.length > 0) {
-      saveBtn.innerText = "⚡ 正在智慧壓縮圖片中...";
-      // 等比例縮小至最大寬度 1200px，壓縮品質 0.7 (高 CP 值畫質)
-      photoPayload = await compressImage(photoInput.files[0], 1200, 0.7);
+    if (selectedFilesArray.length > 0) {
+      saveBtn.innerText = `⚡ 正在壓縮圖片中 (0/${selectedFilesArray.length})...`;
+      
+      const compressedArray = [];
+      for (let i = 0; i < selectedFilesArray.length; i++) {
+        saveBtn.innerText = `⚡ 正在壓縮圖片中 (${i + 1}/${selectedFilesArray.length})...`;
+        const base64 = await compressImage(selectedFilesArray[i], 1200, 0.7);
+        compressedArray.push(base64);
+      }
+      // 將多個 Base64 字串打包成陣列（後端若支援接收陣列，可直接存成多網址）
+      photoPayload = compressedArray;
     } else if (editingDataId !== null) {
       photoPayload = "KEEP_OLD";
     }
@@ -595,7 +667,7 @@ async function addRecord(event) {
       ...row,
       id: editingDataId !== null ? editingDataId : makeRecordId(),
       action: editingDataId !== null ? "edit" : "add",
-      photoBase64: photoPayload
+      photoBase64: photoPayload // 這裡現在傳送的是【Base64 陣列】或 null 或 "KEEP_OLD"
     };
 
     saveBtn.innerText = editingDataId !== null ? "☁️ 正在更新雲端資料..." : "☁️ 正在同步到 Google 試算表...";
@@ -629,7 +701,6 @@ async function addRecord(event) {
   }
 }
 
-// 🛠️ 核心新增：HTML5 Canvas 圖片縮放與畫質壓縮函式
 function compressImage(file, maxWidth, quality) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -653,7 +724,6 @@ function compressImage(file, maxWidth, quality) {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
-        // 統一轉為高效的 jpeg 格式，並套用畫質壓縮率
         const compressedBase64 = canvas.toDataURL("image/jpeg", quality);
         resolve(compressedBase64);
       };
@@ -685,6 +755,9 @@ function editRecord(id) {
     infoText.style.display = "none";
   }
   document.getElementById("photo").value = "";
+  
+  selectedFilesArray = [];
+  renderFilePreviews();
 
   document.getElementById("formTitle").innerText = "修改雲端紀錄";
   document.getElementById("formMode").innerText = "目前為修改模式";
