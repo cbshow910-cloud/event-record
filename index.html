@@ -225,6 +225,7 @@ body.dark .badge.low { color: #bbf7d0; }
 .toast { padding: 12px 20px; border-radius: var(--radius); color: white; font-weight: 700; font-size: 14px; box-shadow: var(--shadow); animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards; }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
+.toast.warning { background: var(--warning); } /* 新增 warning 樣式支援 */
 
 @media (max-width: 720px) {
   .live-status-bar { margin: 0 18px 12px; }
@@ -699,6 +700,18 @@ function render() {
   });
 
   filteredData.sort((a, b) => {
+    // 解決第 6 點：當以日期排序時，合併時間(time)進行更精準的複合排序
+    if (sortField === 'date') {
+      const dateTimeA = formatCloudDate(a.date) + (formatCloudTime(a.time) || "00:00");
+      const dateTimeB = formatCloudDate(b.date) + (formatCloudTime(b.time) || "00:00");
+      return sortDesc ? dateTimeB.localeCompare(dateTimeA) : dateTimeA.localeCompare(dateTimeB);
+    }
+    if (sortField === 'time') {
+      const dateTimeA = formatCloudDate(a.date) + (formatCloudTime(a.time) || "00:00");
+      const dateTimeB = formatCloudDate(b.date) + (formatCloudTime(b.time) || "00:00");
+      return sortDesc ? dateTimeB.localeCompare(dateTimeA) : dateTimeA.localeCompare(dateTimeB);
+    }
+
     let valA = a[sortField] || "", valB = b[sortField] || "";
     if (sortField === 'level') {
       const weight = { high: 3, medium: 2, low: 1 };
@@ -1117,7 +1130,8 @@ async function deleteRecord(id) {
   isDeleting = true;
 
   try {
-    showToast("⏳ 正在從雲端移除資料...", "error");
+    // 解決第 5 點：將處理提示樣式從錯誤的紅色 "error" 修正為黃色警示 "warning"
+    showToast("⏳ 正在從雲端移除資料...", "warning");
     const response = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
