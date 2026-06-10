@@ -612,7 +612,6 @@ function updateErrorListCount(text) {
   if(el) el.innerText = text;
 }
 
-// 💡 修正：為 td 補齊對應欄位，避免手機響應式標籤遺失
 function escapeHTML(value) {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
@@ -644,7 +643,6 @@ function resetForm(options = { clearDraft: true }) {
   document.getElementById("photoLabel").innerText = "現場照片 (可選多張，將自動智慧壓縮上傳)";
 
   document.getElementById("date").value = todayLocalString();
-  // 💡 修正 4：限制 HTML 日期挑選器最高隻能點選「今天」
   document.getElementById("date").max = todayLocalString();
   document.getElementById("time").value = new Date().toTimeString().slice(0, 5);
   document.getElementById("event").value = "";
@@ -667,13 +665,9 @@ function resetForm(options = { clearDraft: true }) {
   }
 }
   
-// 💡 優化後的取消編輯函式
 function cancelEdit() { 
   if(confirm("確定要取消修改嗎？目前輸入的內容將會遺失。")) {
-    // 傳入 custom 參數，告訴 resetForm 不要去動草稿，並徹底清除當前表單
     resetForm({ clearDraft: false }); 
-    
-    // 檢查現存草稿是否與當前編輯的 ID 相同，如果是，代表沒必要保留該草稿
     localStorage.removeItem('formDraft');
     document.getElementById('draftStatus').innerText = "✅ 已取消修改，表單已重置。";
   }
@@ -716,7 +710,6 @@ function render() {
   });
 
   renderTable(); analyze(); drawCharts(); updateFilterText(); updateSortIcons();
-  
   renderRecentEvents();
 }
 
@@ -910,38 +903,32 @@ function handleFileSelect(input) {
   input.value = ""; 
 }
 
-// 💡 優化後的圖片預覽函式（避免記憶體洩漏）
 function renderFilePreviews() {
   const container = document.getElementById("filePreviewContainer");
   
-  // 在重繪前，先清空舊的物件 URL 釋放記憶體
   container.querySelectorAll('.preview-item:not(.old-photo) img').forEach(img => {
-    if (img.src.startsWith('blob:')) {
+    if (img.src && img.src.startsWith('blob:')) {
       URL.revokeObjectURL(img.src);
     }
   });
   
   container.innerHTML = "";
 
-  // ... (保留你原本處理 retainedOldUrls 的程式碼) ...
-
-  // 修改新檔案預覽的部分
-  selectedFilesArray.forEach((file, index) => {
+  retainedOldUrls.forEach((url, index) => {
     const item = document.createElement("div");
-    item.className = "preview-item";
+    item.className = "preview-item old-photo";
+    item.setAttribute("data-label", `舊圖 ${index + 1}`);
 
     const img = document.createElement("img");
-    // 直接賦值，不需要在 onload 裡面 revoke，改由下一次重繪或送出時統一管理
-    img.src = URL.createObjectURL(file); 
+    img.src = getThumbnailUrl(url);
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn-remove-file";
     removeBtn.innerHTML = "✕";
     removeBtn.onclick = function() {
-      // 移除前先手動釋放該圖片的 Blob 記憶體
-      URL.revokeObjectURL(img.src);
-      selectedFilesArray.splice(index, 1);
+      deletedOldUrls.push(retainedOldUrls[index]);
+      retainedOldUrls.splice(index, 1);
       renderFilePreviews();
     };
 
@@ -949,7 +936,6 @@ function renderFilePreviews() {
     item.appendChild(removeBtn);
     container.appendChild(item);
   });
-}
 
   selectedFilesArray.forEach((file, index) => {
     const item = document.createElement("div");
@@ -957,13 +943,15 @@ function renderFilePreviews() {
 
     const img = document.createElement("img");
     img.src = URL.createObjectURL(file); 
-    img.onload = function() { URL.revokeObjectURL(this.src); };
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn-remove-file";
     removeBtn.innerHTML = "✕";
     removeBtn.onclick = function() {
+      if (img.src && img.src.startsWith('blob:')) {
+        URL.revokeObjectURL(img.src);
+      }
       selectedFilesArray.splice(index, 1);
       renderFilePreviews();
     };
@@ -982,10 +970,8 @@ async function addRecord(event) {
     return;
   }
 
-  // 💡 修正 4：前端防護網——防堵時空旅人（不借助物件轉換，用最穩固的純字串比對）
-  const localNow = new Date();
   const systemTodayStr = todayLocalString();
-  const systemCurrentTimeStr = localNow.toTimeString().slice(0, 5);
+  const systemCurrentTimeStr = new Date().toTimeString().slice(0, 5);
 
   if (row.date > systemTodayStr) {
     showToast("⚠️ 發生日期不能選擇未來的日期喔！", "error");
@@ -1066,7 +1052,6 @@ function compressImage(file, maxWidth, quality) {
         let width = img.width;
         let height = img.height;
 
-        // 💡 修正：即使小於 maxWidth，也進行強制等比例縮放重繪，確保二進位壓縮生效
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
@@ -1078,7 +1063,6 @@ function compressImage(file, maxWidth, quality) {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
-        // 強制輸出為 jpeg 格式與指定品質
         const compressedBase64 = canvas.toDataURL("image/jpeg", quality);
         resolve(compressedBase64);
       };
@@ -1087,13 +1071,14 @@ function compressImage(file, maxWidth, quality) {
     reader.onerror = (err) => reject(err);
   });
 }
+
 function editRecord(id) {
   const record = data.find(d => d.id === id);
   if (!record) return;
 
   editingDataId = id;
   document.getElementById("date").value = formatCloudDate(record.date) || todayLocalString();
-  document.getElementById("date").max = todayLocalString(); // 💡 確保修改時最大也隻能選到今天
+  document.getElementById("date").max = todayLocalString(); 
   document.getElementById("time").value = formatCloudTime(record.time) || "";
   document.getElementById("event").value = record.event || "";
   document.getElementById("reason").value = record.reason || "";
@@ -1267,7 +1252,6 @@ async function fetchCloudData() {
   }
 }
 
-// 💡 新增：每分鐘自動校正日期上限的輔助函式
 function updateDateLimit() {
   const dateInput = document.getElementById("date");
   if (dateInput) dateInput.max = todayLocalString();
@@ -1277,7 +1261,6 @@ function init() {
   resetForm({ clearDraft: false }); 
   loadDraft(); 
   
-  // 💡 修正：啟動時設定上限，並每 60 秒自動背景刷新一次
   updateDateLimit();
   setInterval(updateDateLimit, 60 * 1000);
   
