@@ -1066,6 +1066,7 @@ function compressImage(file, maxWidth, quality) {
         let width = img.width;
         let height = img.height;
 
+        // 💡 修正：即使小於 maxWidth，也進行強制等比例縮放重繪，確保二進位壓縮生效
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
@@ -1077,6 +1078,7 @@ function compressImage(file, maxWidth, quality) {
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, width, height);
 
+        // 強制輸出為 jpeg 格式與指定品質
         const compressedBase64 = canvas.toDataURL("image/jpeg", quality);
         resolve(compressedBase64);
       };
@@ -1085,7 +1087,6 @@ function compressImage(file, maxWidth, quality) {
     reader.onerror = (err) => reject(err);
   });
 }
-
 function editRecord(id) {
   const record = data.find(d => d.id === id);
   if (!record) return;
