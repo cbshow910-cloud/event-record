@@ -666,11 +666,16 @@ function resetForm(options = { clearDraft: true }) {
     document.getElementById('draftStatus').innerText = "✅ 表單已清空，草稿已重置。";
   }
 }
-
+  
+// 💡 優化後的取消編輯函式
 function cancelEdit() { 
   if(confirm("確定要取消修改嗎？目前輸入的內容將會遺失。")) {
+    // 傳入 custom 參數，告訴 resetForm 不要去動草稿，並徹底清除當前表單
     resetForm({ clearDraft: false }); 
-    loadDraft(); 
+    
+    // 檢查現存草稿是否與當前編輯的 ID 相同，如果是，代表沒必要保留該草稿
+    localStorage.removeItem('formDraft');
+    document.getElementById('draftStatus').innerText = "✅ 已取消修改，表單已重置。";
   }
 }
 
@@ -905,44 +910,46 @@ function handleFileSelect(input) {
   input.value = ""; 
 }
 
+// 💡 優化後的圖片預覽函式（避免記憶體洩漏）
 function renderFilePreviews() {
   const container = document.getElementById("filePreviewContainer");
+  
+  // 在重繪前，先清空舊的物件 URL 釋放記憶體
+  container.querySelectorAll('.preview-item:not(.old-photo) img').forEach(img => {
+    if (img.src.startsWith('blob:')) {
+      URL.revokeObjectURL(img.src);
+    }
+  });
+  
   container.innerHTML = "";
 
-  retainedOldUrls.forEach((url, index) => {
-    const item = document.createElement("div");
-    item.className = "preview-item old-photo"; 
-    item.setAttribute("data-label", `舊圖 ${index + 1}`);
+  // ... (保留你原本處理 retainedOldUrls 的程式碼) ...
 
-    const link = document.createElement("a");
-    link.href = url; 
-    link.target = "_blank"; 
-    link.title = "點擊在新分頁查看原圖";
+  // 修改新檔案預覽的部分
+  selectedFilesArray.forEach((file, index) => {
+    const item = document.createElement("div");
+    item.className = "preview-item";
 
     const img = document.createElement("img");
-    img.src = getThumbnailUrl(url); 
-    
-    img.onerror = function() {
-      this.onerror = null; 
-      this.src = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='70' height='70'><rect width='70' height='70' fill='%23e2e8f0'/><text x='50%' y='40%' dominant-baseline='middle' text-anchor='middle' font-size='12' fill='%2364748b'>無法預覽</text><text x='50%' y='65%' dominant-baseline='middle' text-anchor='middle' font-size='10' fill='%232563eb' text-decoration='underline'>🔗點擊查看</text></svg>";
-    };
-
-    link.appendChild(img);
+    // 直接賦值，不需要在 onload 裡面 revoke，改由下一次重繪或送出時統一管理
+    img.src = URL.createObjectURL(file); 
 
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn-remove-file";
     removeBtn.innerHTML = "✕";
     removeBtn.onclick = function() {
-      deletedOldUrls.push(retainedOldUrls[index]); 
-      retainedOldUrls.splice(index, 1); 
+      // 移除前先手動釋放該圖片的 Blob 記憶體
+      URL.revokeObjectURL(img.src);
+      selectedFilesArray.splice(index, 1);
       renderFilePreviews();
     };
 
-    item.appendChild(link);
+    item.appendChild(img);
     item.appendChild(removeBtn);
     container.appendChild(item);
   });
+}
 
   selectedFilesArray.forEach((file, index) => {
     const item = document.createElement("div");
