@@ -14,8 +14,8 @@
   --text: #111827;
   --muted: #667085;
   --border: #d9e0ea;
-  --primary: #2563eb;
-  --primary-strong: #1d4ed8;
+  --primary: #1f5fbf;
+  --primary-strong: #174a96;
   --primary-soft: #dbeafe;
   --danger: #dc2626;
   --danger-soft: #fee2e2;
@@ -24,8 +24,10 @@
   --warning: #d97706;
   --warning-soft: #fef3c7;
   --slate: #475569;
+  --chart-teal: #0f766e;
+  --chart-blue: #2563eb;
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
-  --radius: 8px;
+  --radius: 10px;
 }
 
 body.dark {
@@ -45,6 +47,8 @@ body.dark {
   --warning: #fbbf24;
   --warning-soft: #78350f;
   --slate: #94a3b8;
+  --chart-teal: #2dd4bf;
+  --chart-blue: #60a5fa;
   --shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
 }
 
@@ -102,6 +106,40 @@ button, input, select, textarea { font: inherit; }
 .full { grid-column: 1 / -1; }
 
 label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.text-primary { color: var(--primary); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-muted { color: var(--muted); }
+.divider { color: var(--border); }
+.form-section-title {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--primary-strong);
+  letter-spacing: 0.03em;
+}
+.form-section-title:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.form-helper {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.action-note {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 input, select, textarea { width: 100%; padding: 10px 11px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); outline: none; transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
 input[type="file"] { padding: 7px 11px; }
 textarea { min-height: 82px; resize: vertical; }
@@ -179,6 +217,14 @@ body.dark .badge.medium { color: #fde68a; }
 body.dark .badge.low { color: #bbf7d0; }
 .badge.owner-internal { background: var(--primary-soft); color: var(--primary-strong); }
 .badge.owner-external { background: var(--warning-soft); color: #92400e; }
+.badge.status-pending { background: var(--danger-soft); color: #991b1b; }
+.badge.status-processing { background: var(--warning-soft); color: #92400e; }
+.badge.status-improved { background: var(--primary-soft); color: var(--primary-strong); }
+.badge.status-closed { background: var(--success-soft); color: #166534; }
+body.dark .badge.status-pending { color: #fecaca; }
+body.dark .badge.status-processing { color: #fde68a; }
+body.dark .badge.status-improved { color: #bfdbfe; }
+body.dark .badge.status-closed { color: #bbf7d0; }
 
 .table-photo-container { display: flex; flex-direction: column; gap: 4px; }
 
@@ -203,6 +249,7 @@ body.dark .badge.low { color: #bbf7d0; }
   border-color: var(--primary);
   color: var(--primary-strong);
 }
+.btn-table-photo.compact { min-width: 76px; justify-content: center; }
 
 .status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 999px; background: var(--surface-muted); border: 1px solid var(--border); color: var(--muted); font-size: 13px; font-weight: 700; transition: all 0.2s ease; }
 .status-pill.edit-active { color: var(--danger); font-weight: 900; background: var(--danger-soft); border-color: var(--danger); }
@@ -226,6 +273,57 @@ body.dark .badge.low { color: #bbf7d0; }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
 .toast.warning { background: var(--warning); } /* 新增 warning 樣式支援 */
+
+
+@media (max-width: 1100px) {
+  .container { grid-template-columns: 1fr; }
+  .charts { grid-template-columns: 1fr; }
+  .chart-box { height: 240px; }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+  .header button,
+  .button-row,
+  .table-tools button,
+  .pagination,
+  .btn-edit,
+  .btn-delete,
+  .lightbox,
+  .toast-container,
+  .quick-reason-container,
+  #photo,
+  #filePreviewContainer {
+    display: none !important;
+  }
+  .header,
+  .container,
+  .table-card,
+  .live-status-bar {
+    margin: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .app-shell { width: 100% !important; }
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #d1d5db !important;
+    break-inside: avoid;
+  }
+  .table-container {
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+  }
+  table {
+    min-width: 100% !important;
+    font-size: 12px !important;
+  }
+  th, td { padding: 8px !important; }
+}
 
 @media (max-width: 720px) {
   .live-status-bar { margin: 0 18px 12px; }
@@ -267,21 +365,21 @@ body.dark .badge.low { color: #bbf7d0; }
 <div class="app-shell">
   <header class="header">
     <div>
-      <div class="title"><span class="title-mark" aria-hidden="true">!</span>事件紀錄系統</div>
+      <div class="title"><span class="title-mark" aria-hidden="true">紀</span>事件紀錄系統</div>
       <div class="subtitle">即時紀錄｜風險追蹤｜異常分析</div>
     </div>
-    <button onclick="toggleTheme()" class="btn-ghost" id="themeBtn" type="button">深色模式</button>
+    <button class="btn-ghost" id="themeBtn" type="button">深色模式</button>
   </header>
 
   <section class="live-status-bar">
     <div class="live-status-group">
-      <span>今日事件：<span id="statToday" style="color: var(--primary);">0</span></span>
-      <span style="color: var(--border);">｜</span>
-      <span>本月事件：<span id="statMonth" style="color: var(--warning);">0</span></span>
-      <span style="color: var(--border);">｜</span>
-      <span>高風險等：<span id="statHigh" style="color: var(--danger);">0</span></span>
+      <span>今日事件：<span id="statToday" class="text-primary">0</span></span>
+      <span class="divider">｜</span>
+      <span>本月事件：<span id="statMonth" class="text-primary">0</span></span>
+      <span class="divider">｜</span>
+      <span>高風險等：<span id="statHigh" class="text-danger">0</span></span>
     </div>
-    <div>最後同步：<span id="statTime" style="color: var(--muted); font-variant-numeric: tabular-nums;">-</span></div>
+    <div>最後同步：<span id="statTime" class="text-muted" style="font-variant-numeric: tabular-nums;">-</span></div>
   </section>
 
   <main class="container">
@@ -292,7 +390,8 @@ body.dark .badge.low { color: #bbf7d0; }
           <span class="status-pill" id="formMode">必填：帶有 * 號的欄位</span>
         </div>
 
-        <form id="recordForm" class="form-grid" onsubmit="addRecord(event)">
+        <form id="recordForm" class="form-grid">
+          <div class="form-section-title">一、事件內容</div>
           <div>
             <label for="date">發生日期 *</label>
             <input type="date" id="date" required>
@@ -314,22 +413,15 @@ body.dark .badge.low { color: #bbf7d0; }
             <datalist id="reason-list"></datalist>
             
             <div class="quick-reason-container">
-              <button type="button" class="btn-quick-reason" onclick="setQuickReason('設備故障')">🛠️ 設備故障</button>
-              <button type="button" class="btn-quick-reason" onclick="setQuickReason('人員疏漏')">⚠️ 人員疏漏</button>
-              <button type="button" class="btn-quick-reason" onclick="setQuickReason('天氣因素')">🌧️ 天氣因素</button>
-              <button type="button" class="btn-quick-reason" onclick="setQuickReason('交接未落實')">📋 交接未落實</button>
-              <button type="button" class="btn-quick-reason" onclick="setQuickReason('尖峰人潮')">👥 尖峰人潮</button>
+              <button type="button" class="btn-quick-reason" data-reason="設備故障">🛠️ 設備故障</button>
+              <button type="button" class="btn-quick-reason" data-reason="人員疏漏">⚠️ 人員疏漏</button>
+              <button type="button" class="btn-quick-reason" data-reason="天氣因素">🌧️ 天氣因素</button>
+              <button type="button" class="btn-quick-reason" data-reason="交接未落實">📋 交接未落實</button>
+              <button type="button" class="btn-quick-reason" data-reason="尖峰人潮">👥 尖峰人潮</button>
             </div>
           </div>
 
-          <div class="full">
-            <label for="photo" id="photoLabel" style="color: var(--primary);">現場照片 (可選多張，將自動智慧壓縮上傳)</label>
-            <input type="file" id="photo" accept="image/*" multiple onchange="handleFileSelect(this)">
-            <div id="filePreviewContainer" class="preview-container"></div>
-            <div class="notice form-note" style="color: var(--danger); font-weight: bold; margin-top: 6px;">
-              ⚠️ 請勿上傳含病患臉部、個資、病歷、身分證或敏感文件的照片。
-            </div>
-          </div>
+          <div class="form-section-title">二、分類與責任</div>
 
           <div>
             <label for="related">相關人員 *</label>
@@ -356,19 +448,46 @@ body.dark .badge.low { color: #bbf7d0; }
             <label>問題歸屬</label>
             <input type="hidden" id="ownership" value="internal">
             <div class="ownership-options" role="group">
-              <button class="ownership-btn active" id="ownerInternalBtn" onclick="setOwnership('internal', { saveDraft: true })" type="button">內部</button>
-              <button class="ownership-btn external" id="ownerExternalBtn" onclick="setOwnership('external', { saveDraft: true })" type="button">外部</button>
+              <button class="ownership-btn active" id="ownerInternalBtn" type="button">內部</button>
+              <button class="ownership-btn external" id="ownerExternalBtn" type="button">外部</button>
+            </div>
+          </div>
+
+          <div>
+            <label for="status">處理狀態</label>
+            <select id="status">
+              <option value="pending">未處理</option>
+              <option value="processing">處理中</option>
+              <option value="improved">已改善</option>
+              <option value="closed">已結案</option>
+            </select>
+          </div>
+
+          <div class="full">
+            <label for="actionTaken">改善措施 / 後續處理</label>
+            <textarea id="actionTaken" placeholder="例：已提醒交接流程、已通知外包廠商、已更換設備..."></textarea>
+            <div class="form-helper">此欄可空白，適合後續追蹤與列印報告使用。</div>
+          </div>
+
+          <div class="form-section-title">三、照片與送出</div>
+
+          <div class="full">
+            <label for="photo" id="photoLabel" class="text-primary">現場照片 (可選多張，將自動智慧壓縮上傳)</label>
+            <input type="file" id="photo" accept="image/*" multiple>
+            <div id="filePreviewContainer" class="preview-container"></div>
+            <div class="notice form-note text-danger" style="font-weight: bold; margin-top: 6px;">
+              ⚠️ 請勿上傳含病患臉部、個資、病歷、身分證或敏感文件的照片。
             </div>
           </div>
 
           <div class="full button-group-vertical">
             <div class="button-row">
               <button class="btn-add" id="saveBtn" type="submit">送出紀錄</button>
-              <button class="btn-cancel" id="cancelEditBtn" onclick="cancelEdit()" type="button" hidden>取消</button>
+              <button class="btn-cancel" id="cancelEditBtn" type="button" hidden>取消</button>
             </div>
             <div class="button-row">
-              <button class="btn-slate" onclick="window.print()" type="button">匯出 PDF 報告</button>
-              <button class="btn-export" onclick="exportCSV()" type="button">匯出 CSV</button>
+              <button class="btn-slate" id="printBtn" type="button">匯出 PDF 報告</button>
+              <button class="btn-export" id="exportCsvBtn" type="button">匯出 CSV</button>
             </div>
           </div>
         </form>
@@ -379,10 +498,10 @@ body.dark .badge.low { color: #bbf7d0; }
       <div class="card">
         <h3>搜尋與篩選</h3>
         <label for="search">關鍵字搜尋</label>
-        <input type="text" id="search" placeholder="搜尋事件、原因、相關人員..." oninput="debouncedRender()">
+        <input type="text" id="search" placeholder="搜尋事件、原因、相關人員...">
         <div class="button-row">
-          <button class="btn-filter" onclick="filterMonth()" type="button">本月</button>
-          <button class="btn-filter" onclick="clearFilter()" type="button">全部</button>
+          <button class="btn-filter" id="filterMonthBtn" type="button">本月</button>
+          <button class="btn-filter" id="clearFilterBtn" type="button">全部</button>
         </div>
         <div class="notice form-note" id="filterStatus">目前篩選：全部</div>
       </div>
@@ -398,6 +517,8 @@ body.dark .badge.low { color: #bbf7d0; }
           <div class="stat-box"><div class="stat-label">低</div><div class="stat-value" id="lowCount">0</div></div>
           <div class="stat-box"><div class="stat-label">內部</div><div class="stat-value" id="internalCount">0</div></div>
           <div class="stat-box"><div class="stat-label">外部</div><div class="stat-value" id="externalCount">0</div></div>
+          <div class="stat-box"><div class="stat-label">未結案</div><div class="stat-value" id="openCount">0</div></div>
+          <div class="stat-box"><div class="stat-label">已結案</div><div class="stat-value" id="closedCount">0</div></div>
           <div class="stat-box"><div class="stat-label">最常原因</div><div class="stat-value small" id="topReason">無</div></div>
         </div>
       </div>
@@ -424,7 +545,7 @@ body.dark .badge.low { color: #bbf7d0; }
     <div class="table-tools">
       <div style="display: flex; align-items: center; gap: 12px;">
         <h3 style="margin:0;">雲端紀錄列表</h3>
-        <button class="btn-filter" onclick="fetchCloudData()" type="button" style="min-height: 30px; padding: 2px 10px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">🔄 重新整理</button>
+        <button class="btn-filter" id="refreshBtn" type="button" style="min-height: 30px; padding: 2px 10px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer;">🔄 重新整理</button>
       </div>
       <div class="notice" id="listCount">準備連線中...</div>
     </div>
@@ -435,39 +556,40 @@ body.dark .badge.low { color: #bbf7d0; }
       <table>
         <thead>
           <tr>
-            <th data-sort="date" onclick="handleSort('date')">日期 <span class="sort-icon"></span></th>
+            <th data-sort="date">日期 <span class="sort-icon"></span></th>
             <th>照片</th>
             <th>事件</th>
             <th>原因</th>
             <th>相關人員</th>
             <th>填寫人員</th>
-            <th data-sort="ownership" onclick="handleSort('ownership')">問題歸屬 <span class="sort-icon"></span></th>
-            <th data-sort="level" onclick="handleSort('level')">嚴重 <span class="sort-icon"></span></th>
+            <th data-sort="ownership">問題歸屬 <span class="sort-icon"></span></th>
+            <th data-sort="level">嚴重 <span class="sort-icon"></span></th>
+            <th data-sort="status">狀態 <span class="sort-icon"></span></th>
             <th class="action-cell">操作</th>
           </tr>
         </thead>
         <tbody id="tb">
-          <tr><td colspan="9" class="empty">🔄 正在與 Google 試算表連線載入資料，請稍候...</td></tr>
+          <tr><td colspan="10" class="empty">🔄 正在與 Google 試算表連線載入資料，請稍候...</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="pagination" id="paginationCtrl" style="display: none;">
-      <button class="btn-slate" id="prevPageBtn" onclick="changePage(-1)" type="button">上一頁</button>
+      <button class="btn-slate" id="prevPageBtn" type="button">上一頁</button>
       <span class="page-info" id="pageInfo">1 / 1</span>
-      <button class="btn-slate" id="nextPageBtn" onclick="changePage(1)" type="button">下一頁</button>
+      <button class="btn-slate" id="nextPageBtn" type="button">下一頁</button>
     </div>
   </section>
 </div>
 
-<div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
-  <div class="lightbox-container" onclick="event.stopPropagation()">
-    <button class="lightbox-close" onclick="closeLightbox(event)">✕</button>
+<div id="lightbox" class="lightbox">
+  <div class="lightbox-container">
+    <button class="lightbox-close" id="lightboxCloseBtn" type="button">✕</button>
     <img id="lightboxImg" src="" alt="放大預覽圖">
     <div class="lightbox-nav">
-      <button onclick="changeLightboxImage(-1)">◀</button>
+      <button id="lightboxPrevBtn" type="button">◀</button>
       <span id="lightboxCount">1/1</span>
-      <button onclick="changeLightboxImage(1)">▶</button>
+      <button id="lightboxNextBtn" type="button">▶</button>
     </div>
   </div>
 </div>
@@ -478,8 +600,34 @@ body.dark .badge.low { color: #bbf7d0; }
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzCBwPxtZ7cTSpvumnIrQ0hz6tiA40NgfexWzV6QWgi8e8lLjpiBlb9VGgDnUffO9wx/exec";
 const API_TOKEN = "evt_2026_R8xLq2vP91mZaT7kQw4NfH6sYbCdE3uA"; 
 
-const MAX_PHOTO_COUNT = 5;
-const MAX_FILE_SIZE = 8 * 1024 * 1024; 
+const CONFIG = {
+  maxPhotoCount: 5,
+  maxFileSizeMB: 8,
+  imageMaxWidth: 1200,
+  imageQuality: 0.7,
+  itemsPerPage: 10
+};
+
+const LEVEL_MAP = {
+  low: { text: "低", className: "low", weight: 1 },
+  medium: { text: "中", className: "medium", weight: 2 },
+  high: { text: "高", className: "high", weight: 3 }
+};
+
+const OWNERSHIP_MAP = {
+  internal: { text: "內部", className: "owner-internal" },
+  external: { text: "外部", className: "owner-external" }
+};
+
+const STATUS_MAP = {
+  pending: { text: "未處理", className: "status-pending", weight: 1 },
+  processing: { text: "處理中", className: "status-processing", weight: 2 },
+  improved: { text: "已改善", className: "status-improved", weight: 3 },
+  closed: { text: "已結案", className: "status-closed", weight: 4 }
+};
+
+const MAX_PHOTO_COUNT = CONFIG.maxPhotoCount;
+const MAX_FILE_SIZE = CONFIG.maxFileSizeMB * 1024 * 1024; 
 
 let data = [];
 let filteredData = [];
@@ -495,7 +643,7 @@ let retainedOldUrls = [];
 let deletedOldUrls = [];
 
 let currentPage = 1;
-const itemsPerPage = 10; 
+const itemsPerPage = CONFIG.itemsPerPage; 
 
 let currentLightboxImages = [];
 let currentLightboxIndex = 0;
@@ -551,7 +699,10 @@ function renderRecentEvents() {
       <div style="padding: 10px; background: var(--surface-muted); border-radius: 4px; border-left: 4px solid ${borderLeftColor}; line-height: 1.45; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
         <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: bold;">
           <span>📅 ${escapeHTML(cleanDate)}（填報人：${escapeHTML(item.reporter)}）</span>
-          <span style="padding: 1px 6px; border-radius: 99px; ${badgeColor}">${levelText(item.level)}</span>
+          <span style="display:flex; gap:4px; align-items:center;">
+            <span style="padding: 1px 6px; border-radius: 99px; ${badgeColor}">${levelText(item.level)}</span>
+            <span class="badge ${statusClass(item.status)}" style="font-size:11px; padding:1px 6px; min-width:auto;">${statusText(item.status)}</span>
+          </span>
         </div>
         <div style="font-weight: 700; word-break: break-all; color: var(--text); font-size: 13px;">${escapeHTML(item.event.slice(0, 55))}${item.event.length > 55 ? '...' : ''}</div>
       </div>
@@ -617,9 +768,16 @@ function escapeHTML(value) {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
 function normalizeText(value) { return String(value ?? "").trim(); }
-function levelText(level) { return level === "high" ? "高" : (level === "medium" ? "中" : "低"); }
-function ownershipText(ownership) { return ownership === "external" ? "外部" : "內部"; }
-function ownershipClass(ownership) { return ownership === "external" ? "owner-external" : "owner-internal"; }
+function levelText(level) { return (LEVEL_MAP[level] || LEVEL_MAP.low).text; }
+function levelClass(level) { return (LEVEL_MAP[level] || LEVEL_MAP.low).className; }
+function ownershipText(ownership) { return (OWNERSHIP_MAP[ownership] || OWNERSHIP_MAP.internal).text; }
+function ownershipClass(ownership) { return (OWNERSHIP_MAP[ownership] || OWNERSHIP_MAP.internal).className; }
+function statusText(status) { return (STATUS_MAP[status] || STATUS_MAP.pending).text; }
+function statusClass(status) { return (STATUS_MAP[status] || STATUS_MAP.pending).className; }
+function shortText(value, max = 80) {
+  const text = normalizeText(value);
+  return text.length > max ? `${text.slice(0, max)}...` : text;
+}
 function makeRecordId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
 function setOwnership(value, options = { saveDraft: true }) {
@@ -651,6 +809,8 @@ function resetForm(options = { clearDraft: true }) {
   document.getElementById("related").value = "";
   document.getElementById("reporter").value = "";
   document.getElementById("level").value = "low";
+  document.getElementById("status").value = "pending";
+  document.getElementById("actionTaken").value = "";
   
   setOwnership("internal", { saveDraft: false });
   document.getElementById("photo").value = "";
@@ -693,7 +853,7 @@ function render() {
   const keyword = document.getElementById("search").value.trim().toLowerCase();
   filteredData = data.filter(d => {
     const cleanDate = formatCloudDate(d.date);
-    const matchSearch = normalizeText(d.event).toLowerCase().includes(keyword) || normalizeText(d.reason).toLowerCase().includes(keyword) || normalizeText(d.related).toLowerCase().includes(keyword) || normalizeText(d.reporter).toLowerCase().includes(keyword) || normalizeText(ownershipText(d.ownership)).toLowerCase().includes(keyword) || cleanDate.includes(keyword);
+    const matchSearch = normalizeText(d.event).toLowerCase().includes(keyword) || normalizeText(d.reason).toLowerCase().includes(keyword) || normalizeText(d.related).toLowerCase().includes(keyword) || normalizeText(d.reporter).toLowerCase().includes(keyword) || normalizeText(d.actionTaken).toLowerCase().includes(keyword) || normalizeText(ownershipText(d.ownership)).toLowerCase().includes(keyword) || normalizeText(statusText(d.status)).toLowerCase().includes(keyword) || cleanDate.includes(keyword);
     let matchMonth = true;
     if (currentFilter === "month") matchMonth = cleanDate.startsWith(currentMonthString());
     return matchSearch && matchMonth;
@@ -714,8 +874,12 @@ function render() {
 
     let valA = a[sortField] || "", valB = b[sortField] || "";
     if (sortField === 'level') {
-      const weight = { high: 3, medium: 2, low: 1 };
-      valA = weight[a.level] || 0; valB = weight[b.level] || 0;
+      valA = (LEVEL_MAP[a.level] || LEVEL_MAP.low).weight;
+      valB = (LEVEL_MAP[b.level] || LEVEL_MAP.low).weight;
+    }
+    if (sortField === 'status') {
+      valA = (STATUS_MAP[a.status] || STATUS_MAP.pending).weight;
+      valB = (STATUS_MAP[b.status] || STATUS_MAP.pending).weight;
     }
     if (valA < valB) return sortDesc ? 1 : -1;
     if (valA > valB) return sortDesc ? -1 : 1;
@@ -762,16 +926,14 @@ function renderTable() {
   if (filteredData.length === 0) {
     let emptyMsg = "🌱 雲端目前還沒有相關紀錄喔！在上方新增一筆試試看吧";
     if(data.length > 0) emptyMsg = "找不到符合關鍵字的紀錄 😅";
-    tb.innerHTML = `<tr><td colspan="9" class="empty">${emptyMsg}</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="10" class="empty">${emptyMsg}</td></tr>`;
   } else {
     tb.innerHTML = paginatedData.map(r => {
       let photoContent = '<span style="color:var(--muted)">無</span>';
       
       const urls = normalizePhotoUrls(r.photoUrls);
       if (urls.length > 0) {
-        photoContent = `<div class="table-photo-container">` + 
-          urls.map((url, index) => `<button type="button" class="btn-table-photo" data-action="photo" data-id="${escapeHTML(r.id)}" data-index="${index}">📷 照片 ${index + 1}</button>`).join("") + 
-          `</div>`;
+        photoContent = `<button type="button" class="btn-table-photo compact" data-action="photo" data-id="${escapeHTML(r.id)}" data-index="0">📷 ${urls.length} 張</button>`;
       }
 
       let cleanDate = formatCloudDate(r.date);
@@ -784,12 +946,16 @@ function renderTable() {
           <div style="font-size:12px;color:var(--muted);">${escapeHTML(cleanTime || "-")}</div>
         </td>
         <td data-label="照片">${photoContent}</td>
-        <td data-label="發生事件" class="event-cell">${escapeHTML(r.event)}</td>
+        <td data-label="發生事件" class="event-cell">
+          <div>${escapeHTML(shortText(r.event, 90))}</div>
+          ${r.actionTaken ? `<div class="action-note">後續：${escapeHTML(shortText(r.actionTaken, 80))}</div>` : ""}
+        </td>
         <td data-label="發生原因" class="event-cell">${escapeHTML(r.reason || "-")}</td>
         <td data-label="相關人員">${escapeHTML(r.related || "-")}</td>
         <td data-label="填寫人員">${escapeHTML(r.reporter || "-")}</td>
         <td data-label="問題歸屬"><span class="badge ${ownershipClass(r.ownership)}">${ownershipText(r.ownership)}</span></td>
-        <td data-label="嚴重程度"><span class="badge ${escapeHTML(r.level)}">${levelText(r.level)}</span></td>
+        <td data-label="嚴重程度"><span class="badge ${levelClass(r.level)}">${levelText(r.level)}</span></td>
+        <td data-label="處理狀態"><span class="badge ${statusClass(r.status)}">${statusText(r.status)}</span></td>
         <td data-label="操作選項" class="action-cell">
           <button class="btn-edit" data-action="edit" data-id="${escapeHTML(r.id)}" type="button">修改</button>
           <button class="btn-delete" data-action="delete" data-id="${escapeHTML(r.id)}" type="button">刪除</button>
@@ -857,7 +1023,9 @@ function getFormRecord() {
     related: normalizeText(document.getElementById("related").value),
     reporter: normalizeText(document.getElementById("reporter").value),
     level: normalizeText(document.getElementById("level").value) || "low",
-    ownership: normalizeText(document.getElementById("ownership").value) || "internal"
+    ownership: normalizeText(document.getElementById("ownership").value) || "internal",
+    status: normalizeText(document.getElementById("status").value) || "pending",
+    actionTaken: normalizeText(document.getElementById("actionTaken").value)
   };
 }
 
@@ -868,7 +1036,6 @@ function triggerDraftSave() {
   document.getElementById('draftStatus').innerText = "📝 草稿已於 " + new Date().toTimeString().slice(0, 5) + " 自動儲存";
 }
 
-document.getElementById('recordForm').addEventListener('input', triggerDraftSave);
 
 function loadDraft() {
   const draftStr = localStorage.getItem('formDraft');
@@ -882,6 +1049,8 @@ function loadDraft() {
       if(draft.related) document.getElementById("related").value = draft.related;
       if(draft.reporter) document.getElementById("reporter").value = draft.reporter;
       if(draft.level) document.getElementById("level").value = draft.level;
+      if(draft.status) document.getElementById("status").value = draft.status;
+      if(draft.actionTaken) document.getElementById("actionTaken").value = draft.actionTaken;
       if(draft.ownership) setOwnership(draft.ownership, { saveDraft: false });
       document.getElementById('draftStatus').innerText = "📝 已為您載入上次未完成的草稿";
     } catch(e){}
@@ -1006,7 +1175,7 @@ async function addRecord(event) {
       const compressedArray = [];
       for (let i = 0; i < selectedFilesArray.length; i++) {
         saveBtn.innerText = `⚡ 正在壓縮圖片中 (${i + 1}/${selectedFilesArray.length})...`;
-        const base64 = await compressImage(selectedFilesArray[i], 1200, 0.7);
+        const base64 = await compressImage(selectedFilesArray[i], CONFIG.imageMaxWidth, CONFIG.imageQuality);
         
         if (base64.length > 4 * 1024 * 1024) {
           throw new Error(`第 ${i + 1} 張圖片壓縮後仍過大，請改用較小圖片或減少照片`);
@@ -1098,6 +1267,8 @@ function editRecord(id) {
   document.getElementById("related").value = record.related || "";
   document.getElementById("reporter").value = record.reporter || "";
   document.getElementById("level").value = record.level || "low";
+  document.getElementById("status").value = record.status || "pending";
+  document.getElementById("actionTaken").value = record.actionTaken || "";
   setOwnership(record.ownership || "internal", { saveDraft: false });
 
   document.getElementById("photoLabel").innerText = "照片管理 (可點選 ✕ 刪除舊照片，或選取新照片加入)";
@@ -1161,7 +1332,7 @@ function commonChartOptions(extra = {}) {
 }
 
 function analyze() {
-  let high = 0, medium = 0, low = 0, internal = 0, external = 0;
+  let high = 0, medium = 0, low = 0, internal = 0, external = 0, open = 0, closed = 0;
   let todayCount = 0, monthCount = 0;
   
   const todayStr = todayLocalString();
@@ -1175,6 +1346,7 @@ function analyze() {
     
     if (d.level === "high") high++; else if (d.level === "medium") medium++; else low++;
     if (d.ownership === "external") external++; else internal++;
+    if (d.status === "closed") closed++; else open++;
     const reason = normalizeText(d.reason);
     if (reason) reasonMap[reason] = (reasonMap[reason] || 0) + 1;
   });
@@ -1185,6 +1357,8 @@ function analyze() {
   document.getElementById("lowCount").innerText = low;
   document.getElementById("internalCount").innerText = internal;
   document.getElementById("externalCount").innerText = external;
+  document.getElementById("openCount").innerText = open;
+  document.getElementById("closedCount").innerText = closed;
   const top = Object.entries(reasonMap).sort((a, b) => b[1] - a[1])[0];
   document.getElementById("topReason").innerText = top ? `${top[0]}（${top[1]}）` : "無";
 
@@ -1193,24 +1367,56 @@ function analyze() {
   document.getElementById("statHigh").innerText = high;
 }
 
+function upsertChart(existingChart, canvasId, config) {
+  if (!existingChart) return new Chart(document.getElementById(canvasId), config);
+  existingChart.data = config.data;
+  existingChart.options = config.options;
+  existingChart.update();
+  return existingChart;
+}
+
 function drawCharts() {
   const levelCount = { low: 0, medium: 0, high: 0 };
   filteredData.forEach(d => { if (levelCount[d.level] !== undefined) levelCount[d.level]++; });
-  if (levelChart) levelChart.destroy();
-  levelChart = new Chart(document.getElementById("levelChart"), { type: "bar", data: { labels: ["低", "中", "高"], datasets: [{ data: [levelCount.low, levelCount.medium, levelCount.high], backgroundColor: ["#16a34a", "#d97706", "#dc2626"], borderRadius: 6 }] }, options: commonChartOptions() });
+  levelChart = upsertChart(levelChart, "levelChart", {
+    type: "bar",
+    data: {
+      labels: ["低", "中", "高"],
+      datasets: [{ data: [levelCount.low, levelCount.medium, levelCount.high], backgroundColor: ["#16a34a", "#d97706", "#dc2626"], borderRadius: 6 }]
+    },
+    options: commonChartOptions()
+  });
 
   const dateMap = {};
-  filteredData.forEach(d => { const date = normalizeText(formatCloudDate(d.date)); if (date && date !== "-") dateMap[date] = (dateMap[date] || 0) + 1; });
+  filteredData.forEach(d => {
+    const date = normalizeText(formatCloudDate(d.date));
+    if (date && date !== "-") dateMap[date] = (dateMap[date] || 0) + 1;
+  });
   const dates = Object.keys(dateMap).sort();
   const counts = dates.map(d => dateMap[d]);
-  if (dateChart) dateChart.destroy();
-  dateChart = new Chart(document.getElementById("dateChart"), { type: "line", data: { labels: dates.length ? dates : [""], datasets: [{ data: counts.length ? counts : [0], borderColor: "#2563eb", backgroundColor: "rgba(37, 99, 235, 0.14)", pointRadius: 3, fill: true, tension: 0.35 }] }, options: commonChartOptions() });
+  dateChart = upsertChart(dateChart, "dateChart", {
+    type: "line",
+    data: {
+      labels: dates.length ? dates : [""],
+      datasets: [{ data: counts.length ? counts : [0], borderColor: getComputedStyle(document.body).getPropertyValue("--chart-blue").trim(), backgroundColor: "rgba(37, 99, 235, 0.14)", pointRadius: 3, fill: true, tension: 0.35 }]
+    },
+    options: commonChartOptions()
+  });
 
   const reasonMap = {};
-  filteredData.forEach(d => { const reason = normalizeText(d.reason); if (reason) reasonMap[reason] = (reasonMap[reason] || 0) + 1; });
+  filteredData.forEach(d => {
+    const reason = normalizeText(d.reason);
+    if (reason) reasonMap[reason] = (reasonMap[reason] || 0) + 1;
+  });
   const sorted = Object.entries(reasonMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  if (reasonChart) reasonChart.destroy();
-  reasonChart = new Chart(document.getElementById("reasonChart"), { type: "bar", data: { labels: sorted.length ? sorted.map(r => r[0]) : [""], datasets: [{ data: sorted.length ? sorted.map(r => r[1]) : [0], backgroundColor: "#0f766e", borderRadius: 6 }] }, options: commonChartOptions({ indexAxis: "y", scales: { x: { beginAtZero: true, grid: { color: getChartGridColor() } }, y: { grid: { display: false } } } }) });
+  reasonChart = upsertChart(reasonChart, "reasonChart", {
+    type: "bar",
+    data: {
+      labels: sorted.length ? sorted.map(r => r[0]) : [""],
+      datasets: [{ data: sorted.length ? sorted.map(r => r[1]) : [0], backgroundColor: getComputedStyle(document.body).getPropertyValue("--chart-teal").trim(), borderRadius: 6 }]
+    },
+    options: commonChartOptions({ indexAxis: "y", scales: { x: { beginAtZero: true, grid: { color: getChartGridColor() }, ticks: { color: getChartTextColor(), precision: 0 } }, y: { ticks: { color: getChartTextColor() }, grid: { display: false } } } })
+  });
 }
 
 function filterMonth() { currentFilter = "month"; currentPage = 1; render(); }
@@ -1258,7 +1464,7 @@ async function fetchCloudData() {
     document.getElementById("statTime").style.color = "var(--danger)";
     
     document.getElementById("tb").innerHTML = `
-      <tr><td colspan="9" class="empty" style="color: var(--danger);">
+      <tr><td colspan="10" class="empty" style="color: var(--danger);">
       ❌ 讀取雲端資料失敗！<br><br>
       原因：<b>${escapeHTML(error.message)}</b><br>
       (如果顯示 Failed to fetch，代表已被安全政策阻擋或 Token 錯誤)
@@ -1271,7 +1477,41 @@ function updateDateLimit() {
   if (dateInput) dateInput.max = todayLocalString();
 }
 
+
+function wireEvents() {
+  document.getElementById("themeBtn").addEventListener("click", toggleTheme);
+  document.getElementById("recordForm").addEventListener("submit", addRecord);
+  document.getElementById("recordForm").addEventListener("input", triggerDraftSave);
+  document.getElementById("photo").addEventListener("change", function() { handleFileSelect(this); });
+  document.getElementById("cancelEditBtn").addEventListener("click", cancelEdit);
+  document.getElementById("printBtn").addEventListener("click", () => window.print());
+  document.getElementById("exportCsvBtn").addEventListener("click", exportCSV);
+  document.getElementById("search").addEventListener("input", debouncedRender);
+  document.getElementById("filterMonthBtn").addEventListener("click", filterMonth);
+  document.getElementById("clearFilterBtn").addEventListener("click", clearFilter);
+  document.getElementById("refreshBtn").addEventListener("click", fetchCloudData);
+  document.getElementById("prevPageBtn").addEventListener("click", () => changePage(-1));
+  document.getElementById("nextPageBtn").addEventListener("click", () => changePage(1));
+  document.getElementById("ownerInternalBtn").addEventListener("click", () => setOwnership("internal", { saveDraft: true }));
+  document.getElementById("ownerExternalBtn").addEventListener("click", () => setOwnership("external", { saveDraft: true }));
+
+  document.querySelectorAll(".btn-quick-reason").forEach(btn => {
+    btn.addEventListener("click", () => setQuickReason(btn.dataset.reason));
+  });
+
+  document.querySelectorAll("th[data-sort]").forEach(th => {
+    th.addEventListener("click", () => handleSort(th.getAttribute("data-sort")));
+  });
+
+  document.getElementById("lightbox").addEventListener("click", closeLightbox);
+  document.querySelector(".lightbox-container").addEventListener("click", event => event.stopPropagation());
+  document.getElementById("lightboxCloseBtn").addEventListener("click", closeLightbox);
+  document.getElementById("lightboxPrevBtn").addEventListener("click", () => changeLightboxImage(-1));
+  document.getElementById("lightboxNextBtn").addEventListener("click", () => changeLightboxImage(1));
+}
+
 function init() {
+  wireEvents();
   resetForm({ clearDraft: false }); 
   loadDraft(); 
   
