@@ -218,19 +218,21 @@ tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 24%, transpa
 .badge.high { background: var(--danger-soft); color: #991b1b; }
 .badge.medium { background: var(--warning-soft); color: #92400e; }
 .badge.low { background: var(--success-soft); color: #166534; }
-body.dark .badge.high { color: #fecaca; }
-body.dark .badge.medium { color: #fde68a; }
-body.dark .badge.low { color: #bbf7d0; }
+body.dark .badge.high { color: #fecaca; background: #991b1b55; }
+body.dark .badge.medium { color: #fde68a; background: #78350f88; } /* 強化嚴重的"中"：背景稍微加深加亮 */
+body.dark .badge.low { color: #bbf7d0; background: #14532d55; }
+body.dark .badge.owner-internal { color: #bfdbfe; background: #1e3a8a77; }
+body.dark .badge.owner-external { color: #fde68a; background: #78350f88; } /* 解決問題：問題歸屬"外部"在深色模式的顏色 */
 .badge.owner-internal { background: var(--primary-soft); color: var(--primary-strong); }
 .badge.owner-external { background: var(--warning-soft); color: #92400e; }
 .badge.status-pending { background: var(--danger-soft); color: #991b1b; }
 .badge.status-processing { background: var(--warning-soft); color: #92400e; }
 .badge.status-improved { background: var(--primary-soft); color: var(--primary-strong); }
 .badge.status-closed { background: var(--success-soft); color: #166534; }
-body.dark .badge.status-pending { color: #fecaca; }
-body.dark .badge.status-processing { color: #fde68a; }
-body.dark .badge.status-improved { color: #bfdbfe; }
-body.dark .badge.status-closed { color: #bbf7d0; }
+body.dark .badge.status-pending { color: #fecaca; background: #991b1b55; }
+body.dark .badge.status-processing { color: #fde68a; background: #78350f88; }
+body.dark .badge.status-improved { color: #bfdbfe; background: #1e3a8a77; }
+body.dark .badge.status-closed { color: #bbf7d0; background: #14532d55; }
 
 .table-photo-container { display: flex; flex-direction: column; gap: 4px; }
 
