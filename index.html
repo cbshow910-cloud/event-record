@@ -7,6 +7,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+/* 重新整理按鈕轉圈圈動畫 */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 :root {
   --bg: #f6f8fb;
   --surface: #ffffff;
@@ -1443,6 +1449,13 @@ function toggleTheme() { document.body.classList.toggle("dark"); localStorage.se
 function updateThemeButton() { document.getElementById("themeBtn").innerText = document.body.classList.contains("dark") ? "淺色模式" : "深色模式"; }
 
 async function fetchCloudData() {
+  // 1. 抓取重新整理按鈕，並加上旋轉動畫與讀取中狀態
+  const refreshBtn = document.getElementById("refreshBtn");
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = `<span style="display: inline-block; animation: spin 1s linear infinite;">🔄</span> 讀取中...`;
+  }
+
   try {
     const response = await fetch(`${GAS_URL}?token=${encodeURIComponent(API_TOKEN)}`);
     if (!response.ok) throw new Error(`伺服器拒絕連線：${response.status}`);
@@ -1456,6 +1469,9 @@ async function fetchCloudData() {
 
     document.getElementById("statTime").innerText = new Date().toTimeString().slice(0, 5);
     document.getElementById("statTime").style.color = "var(--muted)"; 
+    
+    // 2. 成功時跳出提示回饋
+    showToast("🔄 雲端資料已同步更新！", "success");
 
   } catch (error) {
     console.error("詳細錯誤資訊：", error);
@@ -1469,6 +1485,14 @@ async function fetchCloudData() {
       原因：<b>${escapeHTML(error.message)}</b><br>
       (如果顯示 Failed to fetch，代表已被安全政策阻擋或 Token 錯誤)
       </td></tr>`;
+      
+    showToast(`讀取失敗: ${error.message}`, "error");
+  } finally {
+    // 3. 不管成功或失敗，最後都把按鈕還原為原本生龍活虎的模樣
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = `🔄 重新整理`;
+    }
   }
 }
 
