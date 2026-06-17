@@ -170,6 +170,24 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-delete { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--danger); color: var(--danger); }
 .btn-edit { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--slate); color: var(--slate); }
+  /* 修改與刪除按鈕的滑鼠懸停變色特效 */
+.btn-edit, .btn-delete {
+  transition: all 0.2s ease; /* 讓變色過程有平滑的漸變感 */
+}
+
+.btn-edit:hover {
+  background-color: var(--slate) !important;
+  color: #ffffff !important;
+  transform: scale(1.05); /* 稍微放大 5%，更明顯 */
+  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2); /* 加上淡淡陰影 */
+}
+
+.btn-delete:hover {
+  background-color: var(--danger) !important;
+  color: #ffffff !important;
+  transform: scale(1.05); /* 稍微放大 5%，產生警示感 */
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); /* 加上紅色陰影 */
+}
 .btn-cancel { background: var(--slate); color: white; border: none; }
 .btn-cancel:hover { background: color-mix(in srgb, var(--slate) 90%, black); }
 button[hidden] { display: none; }
