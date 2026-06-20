@@ -728,8 +728,9 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = CONFIG.fetchTimeo
 
 function isValidLocalDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return false;
-  const date = new Date(`${value}T00:00:00`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  // 💡 修正：將橫線換成斜線 `${value.replace(/-/g, '/')}`，徹底解決 Safari 的時區辨識問題！
+  const date = new Date(value.replace(/-/g, '/') + ' 00:00:00');
+  return !Number.isNaN(date.getTime());
 }
 
 function isValidTimeValue(value) {
