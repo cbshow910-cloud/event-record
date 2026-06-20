@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* 重新整理按鈕轉圈圈動畫 */
+/* 🔄 重新整理按鈕轉圈圈動畫特效 */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -179,23 +179,24 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .btn-delete { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--danger); color: var(--danger); }
 .btn-edit { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--slate); color: var(--slate); }
-  /* 修改與刪除按鈕的滑鼠懸停變色特效 */
+
+/* 🎯 修改與刪除按鈕的滑鼠懸停變色流暢特效 */
 .btn-edit, .btn-delete {
-  transition: all 0.2s ease; /* 讓變色過程有平滑的漸變感 */
+  transition: all 0.2s ease; 
 }
 
 .btn-edit:hover {
   background-color: var(--slate) !important;
   color: #ffffff !important;
-  transform: scale(1.05); /* 稍微放大 5%，更明顯 */
-  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2); /* 加上淡淡陰影 */
+  transform: scale(1.05); 
+  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2); 
 }
 
 .btn-delete:hover {
   background-color: var(--danger) !important;
   color: #ffffff !important;
-  transform: scale(1.05); /* 稍微放大 5%，產生警示感 */
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); /* 加上紅色陰影 */
+  transform: scale(1.05); 
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); 
 }
 .btn-cancel { background: var(--slate); color: white; border: none; }
 .btn-cancel:hover { background: color-mix(in srgb, var(--slate) 90%, black); }
@@ -246,11 +247,14 @@ tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 24%, transpa
 .badge.high { background: var(--danger-soft); color: #991b1b; }
 .badge.medium { background: var(--warning-soft); color: #92400e; }
 .badge.low { background: var(--success-soft); color: #166534; }
+
+/* 🎨 智慧深色模式：調升「外部」歸屬與「中」等級的高對比度配色 */
 body.dark .badge.high { color: #fecaca; background: #991b1b55; }
-body.dark .badge.medium { color: #fde68a; background: #78350f88; } /* 強化嚴重的"中"：背景稍微加深加亮 */
+body.dark .badge.medium { color: #fde68a; background: #78350f88; } 
 body.dark .badge.low { color: #bbf7d0; background: #14532d55; }
 body.dark .badge.owner-internal { color: #bfdbfe; background: #1e3a8a77; }
-body.dark .badge.owner-external { color: #fde68a; background: #78350f88; } /* 解決問題：問題歸屬"外部"在深色模式的顏色 */
+body.dark .badge.owner-external { color: #fde68a; background: #78350f88; } 
+
 .badge.owner-internal { background: var(--primary-soft); color: var(--primary-strong); }
 .badge.owner-external { background: var(--warning-soft); color: #92400e; }
 .badge.status-pending { background: var(--danger-soft); color: #991b1b; }
@@ -308,7 +312,7 @@ body.dark .badge.status-closed { color: #bbf7d0; background: #14532d55; }
 .toast { padding: 12px 20px; border-radius: var(--radius); color: white; font-weight: 700; font-size: 14px; box-shadow: var(--shadow); animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards; }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
-.toast.warning { background: var(--warning); } /* 新增 warning 樣式支援 */
+.toast.warning { background: var(--warning); } 
 
 
 @media (max-width: 1100px) {
@@ -932,7 +936,6 @@ function render() {
   });
 
   filteredData.sort((a, b) => {
-    // 解決第 6 點：當以日期排序時，合併時間(time)進行更精準的複合排序
     if (sortField === 'date') {
       const dateTimeA = formatCloudDate(a.date) + (formatCloudTime(a.time) || "00:00");
       const dateTimeB = formatCloudDate(b.date) + (formatCloudTime(b.time) || "00:00");
@@ -1408,7 +1411,6 @@ async function deleteRecord(id) {
   isDeleting = true;
 
   try {
-    // 解決第 5 點：將處理提示樣式從錯誤的紅色 "error" 修正為黃色警示 "warning"
     showToast("⏳ 正在從雲端移除資料...", "warning");
     const response = await fetchWithTimeout(GAS_URL, {
       method: "POST",
@@ -1551,6 +1553,7 @@ function clearFilter() { currentFilter = "all"; document.getElementById("search"
 function updateFilterText() { const text = currentFilter === "month" ? `本月` : "全部"; document.getElementById("filterStatus").innerText = `目前篩選：${text}`; }
 function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
 
+// 💡 修正對齊：擴充 CSV 導出欄位，精準吻合 12 欄位雲端架構
 function exportCSV() {
   if (filteredData.length === 0) { alert("目前沒有資料可以匯出喔！"); return; }
 
@@ -1582,9 +1585,6 @@ function exportCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(blobUrl);
 }
-
-function toggleTheme() { document.body.classList.toggle("dark"); localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light"); updateThemeButton(); drawCharts(); }
-function updateThemeButton() { document.getElementById("themeBtn").innerText = document.body.classList.contains("dark") ? "淺色模式" : "深色模式"; }
 
 async function fetchCloudData(options = { silent: false }) {
   const silent = Boolean(options && options.silent);
