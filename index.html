@@ -7,7 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* 🔄 重新整理按鈕轉圈圈動畫特效 */
+/* 重新整理按鈕轉圈圈動畫 */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -180,23 +180,23 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 .btn-delete { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--danger); color: var(--danger); }
 .btn-edit { min-height: 32px; padding: 6px 10px; background: transparent; border-color: var(--slate); color: var(--slate); }
 
-/* 🎯 修改與刪除按鈕的滑鼠懸停變色流暢特效 */
+/* 修改與刪除按鈕的滑鼠懸停變色特效 */
 .btn-edit, .btn-delete {
-  transition: all 0.2s ease; 
+  transition: all 0.2s ease; /* 讓變色過程有平滑的漸變感 */
 }
 
 .btn-edit:hover {
   background-color: var(--slate) !important;
   color: #ffffff !important;
-  transform: scale(1.05); 
-  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2); 
+  transform: scale(1.05); /* 稍微放大 5%，更明顯 */
+  box-shadow: 0 4px 12px rgba(71, 85, 105, 0.2); /* 加上淡淡陰影 */
 }
 
 .btn-delete:hover {
   background-color: var(--danger) !important;
   color: #ffffff !important;
-  transform: scale(1.05); 
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); 
+  transform: scale(1.05); /* 稍微放大 5%，產生警示感 */
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25); /* 加上紅色陰影 */
 }
 .btn-cancel { background: var(--slate); color: white; border: none; }
 .btn-cancel:hover { background: color-mix(in srgb, var(--slate) 90%, black); }
@@ -247,14 +247,11 @@ tbody tr:hover { background: color-mix(in srgb, var(--primary-soft) 24%, transpa
 .badge.high { background: var(--danger-soft); color: #991b1b; }
 .badge.medium { background: var(--warning-soft); color: #92400e; }
 .badge.low { background: var(--success-soft); color: #166534; }
-
-/* 🎨 智慧深色模式：調升「外部」歸屬與「中」等級的高對比度配色 */
 body.dark .badge.high { color: #fecaca; background: #991b1b55; }
-body.dark .badge.medium { color: #fde68a; background: #78350f88; } 
+body.dark .badge.medium { color: #fde68a; background: #78350f88; } /* 強化嚴重的"中"：背景稍微加深加亮 */
 body.dark .badge.low { color: #bbf7d0; background: #14532d55; }
 body.dark .badge.owner-internal { color: #bfdbfe; background: #1e3a8a77; }
-body.dark .badge.owner-external { color: #fde68a; background: #78350f88; } 
-
+body.dark .badge.owner-external { color: #fde68a; background: #78350f88; } /* 解決問題：問題歸屬"外部"在深色模式的顏色 */
 .badge.owner-internal { background: var(--primary-soft); color: var(--primary-strong); }
 .badge.owner-external { background: var(--warning-soft); color: #92400e; }
 .badge.status-pending { background: var(--danger-soft); color: #991b1b; }
@@ -312,7 +309,7 @@ body.dark .badge.status-closed { color: #bbf7d0; background: #14532d55; }
 .toast { padding: 12px 20px; border-radius: var(--radius); color: white; font-weight: 700; font-size: 14px; box-shadow: var(--shadow); animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards; }
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
-.toast.warning { background: var(--warning); } 
+.toast.warning { background: var(--warning); } /* 新增 warning 樣式支援 */
 
 
 @media (max-width: 1100px) {
@@ -528,7 +525,7 @@ body.dark .badge.status-closed { color: #bbf7d0; background: #14532d55; }
             <input type="file" id="photo" accept="image/*" multiple>
             <div id="filePreviewContainer" class="preview-container"></div>
             <div class="notice form-note text-danger" style="font-weight: bold; margin-top: 6px;">
-              ⚠️ 請勿上傳含病患臉部、個資、病歷、身分證或敏感文件的照片。
+              ⚠️ 請勿上傳含病患臉部、個資、病歷、身分證 or 敏感文件的照片。
             </div>
           </div>
 
@@ -701,7 +698,6 @@ const itemsPerPage = CONFIG.itemsPerPage;
 
 let currentLightboxImages = [];
 let currentLightboxIndex = 0;
-
 let isDeleting = false;
 let isSaving = false;
 
@@ -759,7 +755,6 @@ function renderRecentEvents() {
     const dateB = formatCloudDate(b.date) + (formatCloudTime(b.time) || "00:00");
     return dateB.localeCompare(dateA);
   });
-
   const latestItems = sortedAll.slice(0, 5);
 
   if (latestItems.length === 0) {
@@ -840,6 +835,7 @@ function updateErrorListCount(text) {
   if(el) el.innerText = text;
 }
 
+// 安全轉義
 function escapeHTML(value) {
   return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
@@ -1268,7 +1264,6 @@ async function addRecord(event) {
 
   try {
     let photoPayload = null;
-
     if (selectedFilesArray.length > 0) {
       saveBtn.innerText = `⚡ 正在壓縮圖片中 (0/${selectedFilesArray.length})...`;
       const compressedArray = [];
@@ -1298,20 +1293,17 @@ async function addRecord(event) {
     }
 
     saveBtn.innerText = editingDataId !== null ? "☁️ 正在儲存修改..." : "☁️ 正在送出通報...";
-
     const response = await fetchWithTimeout(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify(payload)
     });
-
     const result = await response.json();
     if (!result.success) throw new Error(result.message || "雲端寫入失敗");
-
     showToast(editingDataId !== null ? "✅ 修改成功！" : "✅ 通報送出成功！");
 
     resetForm({ clearDraft: true });
-    setTimeout(() => fetchCloudData({ silent: true }), 1200); 
+    setTimeout(() => fetchCloudData({ silent: true }), 1200);
   } catch (error) {
     console.error(error);
     const message = error.name === "AbortError" ? "連線逾時，請稍後再試" : (error.message || "請檢查網路");
@@ -1402,14 +1394,12 @@ function editRecord(id) {
 
 async function deleteRecord(id) {
   if (isDeleting) return;
-
   const record = data.find(d => d.id === id);
   if (!record) return;
   const label = record.event ? `「${record.event}」` : "這筆紀錄";
   if (!confirm(`⚠️ 確定要從雲端刪除 ${label} 嗎？此動作將會直接刪除 Google 試算表內的那行資料，無法復原！`)) return;
 
   isDeleting = true;
-
   try {
     showToast("⏳ 正在從雲端移除資料...", "warning");
     const response = await fetchWithTimeout(GAS_URL, {
@@ -1417,7 +1407,6 @@ async function deleteRecord(id) {
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action: "delete", id: id, token: API_TOKEN })
     });
-    
     const result = await response.json();
     if (!result.success) throw new Error(result.message || "刪除失敗");
 
@@ -1452,14 +1441,13 @@ function analyze() {
     const reason = normalizeText(d.reason);
     if (reason) reasonMap[reason] = (reasonMap[reason] || 0) + 1;
   });
-
   const todayStr = todayLocalString();
   const monthStr = currentMonthString();
   const liveStats = data.reduce((acc, d) => {
     const cleanDate = formatCloudDate(d.date);
-    if (cleanDate === todayStr) acc.today++;
-    if (cleanDate.startsWith(monthStr)) acc.month++;
-    if (d.level === "high") acc.high++;
+    if (acc && cleanDate === todayStr) acc.today++;
+    if (acc && cleanDate.startsWith(monthStr)) acc.month++;
+    if (acc && d.level === "high") acc.high++;
     return acc;
   }, { today: 0, month: 0, high: 0 });
 
@@ -1553,7 +1541,6 @@ function clearFilter() { currentFilter = "all"; document.getElementById("search"
 function updateFilterText() { const text = currentFilter === "month" ? `本月` : "全部"; document.getElementById("filterStatus").innerText = `目前篩選：${text}`; }
 function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
 
-// 💡 修正對齊：擴充 CSV 導出欄位，精準吻合 12 欄位雲端架構
 function exportCSV() {
   if (filteredData.length === 0) { alert("目前沒有資料可以匯出喔！"); return; }
 
@@ -1586,10 +1573,12 @@ function exportCSV() {
   URL.revokeObjectURL(blobUrl);
 }
 
+function toggleTheme() { document.body.classList.toggle("dark"); localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light"); updateThemeButton(); drawCharts(); }
+function updateThemeButton() { document.getElementById("themeBtn").innerText = document.body.classList.contains("dark") ? "淺色模式" : "深色模式"; }
+
 async function fetchCloudData(options = { silent: false }) {
   const silent = Boolean(options && options.silent);
   const refreshBtn = document.getElementById("refreshBtn");
-
   if (refreshBtn) {
     refreshBtn.disabled = true;
     refreshBtn.innerHTML = `<span style="display: inline-block; animation: spin 1s linear infinite;">🔄</span> 讀取中...`;
@@ -1619,7 +1608,6 @@ async function fetchCloudData(options = { silent: false }) {
     updateErrorListCount("讀取失敗");
     document.getElementById("statTime").innerText = "失敗";
     document.getElementById("statTime").style.color = "var(--danger)";
-
     document.getElementById("tb").innerHTML = `
       <tr><td colspan="10" class="empty" style="color: var(--danger);">
       ❌ 讀取雲端資料失敗！<br><br>
@@ -1690,7 +1678,7 @@ function init() {
   setInterval(updateDateLimit, 60 * 1000);
   
   if (localStorage.getItem("theme") === "dark") document.body.classList.add("dark"); 
-  updateThemeButton(); 
+  updateThemeButton();
   fetchCloudData({ silent: true });
 }
 
