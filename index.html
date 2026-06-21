@@ -768,7 +768,7 @@ function renderRecentEvents() {
     const borderLeftColor = item.level === 'high' ? 'var(--danger)' : (item.level === 'medium' ? 'var(--warning)' : 'var(--primary)');
     const badgeColor = item.level === 'high' ? 'background: var(--danger-soft); color: #991b1b;' : (item.level === 'medium' ? 'background: var(--warning-soft); color: #92400e;' : 'background: var(--success-soft); color: #166534;');
     return `
-      <div style="padding: 10px; background: var(--surface-muted); border-radius: 4px; border-left: 4px solid ${borderLeftColor}; line-height: 1.45; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+      <div onclick="locateTableRecord('${escapeHTML(item.id)}')" style="padding: 10px; background: var(--surface-muted); border-radius: 4px; border-left: 4px solid ${borderLeftColor}; line-height: 1.45; box-shadow: 0 1px 3px rgba(0,0,0,0.02); cursor: pointer; transition: transform 0.1s ease, background-color 0.1s ease;" ontouchstart="this.style.transform='scale(0.98)'" ontouchend="this.style.transform='scale(1)'">
         <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: bold;">
           <span>📅 ${escapeHTML(cleanDate)}（填報人：${escapeHTML(item.reporter)}）</span>
           <span style="display:flex; gap:4px; align-items:center;">
@@ -979,6 +979,32 @@ document.getElementById("tb").addEventListener("click", function(e) {
   if (action === "photo") openLightbox(id, Number(btn.dataset.index || 0));
 });
 
+// 💡 全新功能：點擊最近事件卡片，自動智慧翻頁、精確定位並讓該行發光
+function locateTableRecord(id) {
+  const targetIndex = filteredData.findIndex(d => d.id === id);
+  if (targetIndex === -1) {
+    showToast("⚠️ 找不到該筆資料（可能已被目前的搜尋關鍵字或月份篩選擋住囉）", "warning");
+    return;
+  }
+
+  const targetPage = Math.ceil((targetIndex + 1) / CONFIG.itemsPerPage);
+  currentPage = targetPage;
+  renderTable();
+
+  setTimeout(() => {
+    const btn = document.querySelector(`button[data-id="${id}"][data-action="edit"]`);
+    if (btn) {
+      const targetRow = btn.closest("tr");
+      if (targetRow) {
+        targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+        const originalBg = targetRow.style.background;
+        targetRow.style.transition = "background-color 0.3s ease";
+        targetRow.style.backgroundColor = "color-mix(in srgb, var(--primary) 35%, transparent)";
+        setTimeout(() => { targetRow.style.backgroundColor = originalBg; }, 2500);
+      }
+    }
+  }, 150);
+}
 function renderTable() {
   const tb = document.getElementById("tb");
   tb.innerHTML = "";
@@ -1250,12 +1276,12 @@ async function addRecord(event) {
   const systemTodayStr = todayLocalString();
   const systemCurrentTimeStr = new Date().toTimeString().slice(0, 5);
 
-  if (row.date > systemTodayStr) {
-    showToast("⚠️ 發生日期不能選擇未來的日期喔！", "error");
-    return;
-  }
-  if (row.date === systemTodayStr && row.time && row.time > systemCurrentTimeStr) {
-    showToast("⚠️ 發生時間不能比現在時間還晚喔！", "error");
+// 💡 修正：將輸入的日期時間轉換成真正的物件，進行精準毫秒大小比對，完全解決字串補零誤判
+  const inputDateTime = new Date(row.date.replace(/-/g, '/') + ' ' + (row.time || '00:00') + ':00');
+  const nowDateTime = new Date();
+
+  if (inputDateTime > nowDateTime) {
+    showToast("⚠️ 發生日期或時間不能比現在時間還晚喔！", "error");
     return;
   }
 
