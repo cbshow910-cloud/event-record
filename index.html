@@ -988,25 +988,49 @@ document.getElementById("tb").addEventListener("click", function(e) {
   if (action === "photo") openLightbox(id, Number(btn.dataset.index || 0));
 });
 
-  // 💡 全新功能：點擊分析總覽卡片，自動改寫關鍵字、執行過濾並捲動到列表
+// 💡 智慧連動：點擊分析總覽卡片，進行 100% 精準的欄位屬性過濾（非模糊關鍵字搜尋）
 function filterByStatCard(condition) {
+  // 1. 先把模糊搜尋框清空，避免條件互卡
   const searchInput = document.getElementById("search");
-  if (!searchInput) return;
+  if (searchInput) searchInput.value = "";
 
+  // 2. 根據點擊的卡片種類，改寫系統底層的過濾邏輯
   if (condition === 'all') {
-    clearFilter(); // 點擊總數就直接還原全部
-  } else if (condition === 'high' || condition === 'medium' || condition === 'low') {
-    // 嚴重程度轉換成文字填入搜尋框
-    const textMap = { high: '高', medium: '中', low: '低' };
-    searchInput.value = textMap[condition];
-    debouncedRender();
-  } else {
-    // 歸屬、狀態直接填入搜尋框執行過濾
-    searchInput.value = condition;
-    debouncedRender();
+    clearFilter(); // 點擊總數 ➡️ 還原顯示全部
+    return;
   }
 
-  // 畫面溫柔且流暢地捲動到下方的雲端列表區
+  // 3. 智慧判定同仁點的是「嚴重程度」、「問題歸屬」還是「處理狀態」
+  filteredData = data.filter(d => {
+    let matchMonth = true;
+    if (currentFilter === "month") {
+      matchMonth = formatCloudDate(d.date).startsWith(currentMonthString());
+    }
+    
+    // 精準比對後端資料的核心屬性
+    const matchCondition = (d.level === condition) || 
+                          (d.ownership === condition) || 
+                          (d.status === condition) ||
+                          (condition === '未處理' && d.status !== 'closed'); // 未結案代表不是 closed 的都算
+    
+    return matchMonth && matchCondition;
+  });
+
+  // 4. 強迫翻回第 1 頁並重新渲染列表與圖表
+  currentPage = 1;
+  renderTable();
+  analyze();
+  drawCharts();
+  
+  // 更新篩選狀態文字提示
+  const textLabelMap = {
+    high: '嚴重度：高', medium: '嚴重度：中', low: '嚴重度：低',
+    internal: '歸屬：內部', external: '歸屬：外部',
+    未處理: '狀態：未結案', closed: '狀態：已結案'
+  };
+  document.getElementById("filterStatus").innerText = `目前篩選：${textLabelMap[condition] || '條件過濾'}`;
+
+  // 5. 畫面優雅地滑動到下方的雲端列表區
   setTimeout(() => {
     const tableCard = document.querySelector(".table-card");
     if (tableCard) {
