@@ -210,7 +210,16 @@ button[hidden] { display: none; }
 .preview-item.old-photo::after { content: attr(data-label); position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: white; font-size: 10px; text-align: center; padding: 2px 0; pointer-events: none; }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
-.stat-box { background: var(--surface-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; min-width: 0; }
+.stat-box { background: var(--surface-muted); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; min-width: 0; transition: all 0.2s ease; cursor: pointer; user-select: none; }
+
+/* 🎯 新增：統計卡片懸停發光與按壓 Q 彈回饋 */
+.stat-box:hover {
+  background: color-mix(in srgb, var(--surface-muted) 85%, var(--primary) 15%);
+  border-color: var(--primary);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+.stat-box:active { transform: translateY(-1px); }
 .stat-label { font-size: 13px; color: var(--muted); font-weight: 700; }
 .stat-value { margin-top: 8px; font-size: 26px; line-height: 1.1; font-weight: 900; word-break: break-word; }
 .stat-value.small { font-size: 16px; line-height: 1.35; }
@@ -559,16 +568,16 @@ body.dark .badge.status-closed { color: #bbf7d0; background: #14532d55; }
     <section class="stack">
       <div class="card">
         <h3>分析總覽</h3>
-        <div class="stats-grid">
-          <div class="stat-box"><div class="stat-label">總數</div><div class="stat-value" id="total">0</div></div>
-          <div class="stat-box"><div class="stat-label">高</div><div class="stat-value" id="highCount">0</div></div>
-          <div class="stat-box"><div class="stat-label">中</div><div class="stat-value" id="mediumCount">0</div></div>
-          <div class="stat-box"><div class="stat-label">低</div><div class="stat-value" id="lowCount">0</div></div>
-          <div class="stat-box"><div class="stat-label">內部</div><div class="stat-value" id="internalCount">0</div></div>
-          <div class="stat-box"><div class="stat-label">外部</div><div class="stat-value" id="externalCount">0</div></div>
-          <div class="stat-box"><div class="stat-label">未結案</div><div class="stat-value" id="openCount">0</div></div>
-          <div class="stat-box"><div class="stat-label">已結案</div><div class="stat-value" id="closedCount">0</div></div>
-          <div class="stat-box"><div class="stat-label">最常原因</div><div class="stat-value small" id="topReason">無</div></div>
+       <div class="stats-grid">
+          <div class="stat-box" onclick="filterByStatCard('all')"><div class="stat-label">總數</div><div class="stat-value" id="total">0</div></div>
+          <div class="stat-box" onclick="filterByStatCard('high')"><div class="stat-label">高</div><div class="stat-value" id="highCount">0</div></div>
+          <div class="stat-box" onclick="filterByStatCard('medium')"><div class="stat-label">中</div><div class="stat-value" id="mediumCount">0</div></div>
+          <div class="stat-box" onclick="filterByStatCard('low')"><div class="stat-label">低</div><div class="stat-value" id="lowCount">0</div></div>
+          <div class="stat-box" onclick="filterByStatCard('內部')"><div class="stat-label">內部</div><div class="stat-value" id="internalCount">0</div></div>
+          <div class="stat-box" onclick="filterByStatCard('外部')"><div class="stat-label">外部</div><div class="stat-value" id="externalCount">0</div></div>
+          <div class="stat-box" onclick="filterByStatCard('未處理')"><div class="stat-label">未結案</div><div class="stat-value" id="openCount">0</div></div>
+          <div class="stat-box" onclick="filterByStatCard('已結案')"><div class="stat-label">已結案</div><div class="stat-value" id="closedCount">0</div></div>
+          <div class="stat-box" id="topReasonCard"><div class="stat-label">最常原因</div><div class="stat-value small" id="topReason">無</div></div>
         </div>
       </div>
 
@@ -979,6 +988,32 @@ document.getElementById("tb").addEventListener("click", function(e) {
   if (action === "photo") openLightbox(id, Number(btn.dataset.index || 0));
 });
 
+  // 💡 全新功能：點擊分析總覽卡片，自動改寫關鍵字、執行過濾並捲動到列表
+function filterByStatCard(condition) {
+  const searchInput = document.getElementById("search");
+  if (!searchInput) return;
+
+  if (condition === 'all') {
+    clearFilter(); // 點擊總數就直接還原全部
+  } else if (condition === 'high' || condition === 'medium' || condition === 'low') {
+    // 嚴重程度轉換成文字填入搜尋框
+    const textMap = { high: '高', medium: '中', low: '低' };
+    searchInput.value = textMap[condition];
+    debouncedRender();
+  } else {
+    // 歸屬、狀態直接填入搜尋框執行過濾
+    searchInput.value = condition;
+    debouncedRender();
+  }
+
+  // 畫面溫柔且流暢地捲動到下方的雲端列表區
+  setTimeout(() => {
+    const tableCard = document.querySelector(".table-card");
+    if (tableCard) {
+      tableCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, 100);
+}
 // 💡 全新功能：點擊最近事件卡片，自動智慧翻頁、精確定位並讓該行發光
 function locateTableRecord(id) {
   const targetIndex = filteredData.findIndex(d => d.id === id);
