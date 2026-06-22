@@ -514,7 +514,7 @@ body.dark .badge.status-closed { color: #bbf7d0; background: #14532d55; }
           <div>
             <label for="status">處理狀態</label>
             <select id="status">
-              <option value="pending">未處理</option>
+              <option value="pending">未結案</option>
               <option value="processing">處理中</option>
               <option value="improved">已改善</option>
               <option value="closed">已結案</option>
@@ -575,7 +575,7 @@ body.dark .badge.status-closed { color: #bbf7d0; background: #14532d55; }
           <div class="stat-box" onclick="filterByStatCard('low')"><div class="stat-label">低</div><div class="stat-value" id="lowCount">0</div></div>
           <div class="stat-box" onclick="filterByStatCard('內部')"><div class="stat-label">內部</div><div class="stat-value" id="internalCount">0</div></div>
           <div class="stat-box" onclick="filterByStatCard('外部')"><div class="stat-label">外部</div><div class="stat-value" id="externalCount">0</div></div>
-          <div class="stat-box" onclick="filterByStatCard('未處理')"><div class="stat-label">未結案</div><div class="stat-value" id="openCount">0</div></div>
+          <div class="stat-box" onclick="filterByStatCard('未結案')"><div class="stat-label">未結案</div><div class="stat-value" id="openCount">0</div></div>
           <div class="stat-box" onclick="filterByStatCard('已結案')"><div class="stat-label">已結案</div><div class="stat-value" id="closedCount">0</div></div>
           <div class="stat-box" id="topReasonCard"><div class="stat-label">最常原因</div><div class="stat-value small" id="topReason">無</div></div>
         </div>
@@ -680,7 +680,7 @@ const OWNERSHIP_MAP = {
 };
 
 const STATUS_MAP = {
-  pending: { text: "未處理", className: "status-pending", weight: 1 },
+  pending: { text: "未結案", className: "status-pending", weight: 1 },
   processing: { text: "處理中", className: "status-processing", weight: 2 },
   improved: { text: "已改善", className: "status-improved", weight: 3 },
   closed: { text: "已結案", className: "status-closed", weight: 4 }
@@ -1011,7 +1011,7 @@ function filterByStatCard(condition) {
     const matchCondition = (d.level === condition) || 
                           (d.ownership === condition) || 
                           (d.status === condition) ||
-                          (condition === '未處理' && d.status !== 'closed'); // 未結案代表不是 closed 的都算
+                          (condition === '未結案' && d.status !== 'closed'); // 未結案代表不是 closed 的都算
     
     return matchMonth && matchCondition;
   });
@@ -1026,7 +1026,7 @@ function filterByStatCard(condition) {
   const textLabelMap = {
     high: '嚴重度：高', medium: '嚴重度：中', low: '嚴重度：低',
     internal: '歸屬：內部', external: '歸屬：外部',
-    未處理: '狀態：未結案', closed: '狀態：已結案'
+    未結案: '狀態：未結案', closed: '狀態：已結案'
   };
   document.getElementById("filterStatus").innerText = `目前篩選：${textLabelMap[condition] || '條件過濾'}`;
 
